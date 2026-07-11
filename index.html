@@ -530,6 +530,7 @@
                     <select id="modal-box-room-select" class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary font-bold font-mono">
                         <option value="BA">Bathroom (BA)</option>
                         <option value="BR">Bedroom (BR)</option>
+                        <option value="CL">Closet (CL)</option>
                         <option value="KT">Kitchen (KT)</option>
                         <option value="LR">Living Room (LR)</option>
                         <option value="OF">Office (OF)</option>
@@ -638,6 +639,7 @@
         const roomMappings = {
             "BA": "Bathroom",
             "BR": "Bedroom",
+            "CL": "Closet",
             "KT": "Kitchen",
             "LR": "Living Room",
             "OF": "Office",
@@ -684,6 +686,8 @@
         const defaultRoomsState = {
             "BA": { name: "Bathroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "BR": { name: "Bedroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+      "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "KT": { name: "Kitchen", packed: true, repaired: false, cleaned: false, finished: false, note: "Double check spice cabinet storage drawers before locking." },
             "LR": { name: "Living Room", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "OF": { name: "Office", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
@@ -1998,3 +2002,4 @@
     </script>
 </body>
 </html>
+Displaying Pack_and_Trace_PNiX_PWA_v7.html.
