@@ -1,0 +1,17 @@
+{
+  "short_name": "PackTrack",
+  "name": "PNiX Pack & Track",
+  "description": "Geometric first-person packaging and container label printing system built for high-tempo relocation.",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/nolan/256/box.png",
+      "type": "image/png",
+      "sizes": "256x256"
+    }
+  ],
+  "start_url": "index.html",
+  "background_color": "#0a0a0c",
+  "theme_color": "#00f0ff",
+  "display": "standalone",
+  "orientation": "portrait"
+}
