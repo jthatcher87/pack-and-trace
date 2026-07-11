@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNiX | Pack & Track</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0a0a0c',
+                            panel: '#121217',
+                            primary: '#ff007f', // Neon Pink
+                            secondary: '#00f0ff', // Neon Cyan
+                            accent: '#ab00ff', // Neon Purple
+                            muted: '#6b7280'
+                        }
+                    },
+                    boxShadow: {
+                        'neon-pink': '0 0 10px #ff007f, 0 0 20px rgba(255, 0, 127, 0.3)',
+                        'neon-cyan': '0 0 10px #00f0ff, 0 0 20px rgba(0, 240, 255, 0.3)',
+                        'neon-purple': '0 0 10px #ab00ff, 0 0 20px rgba(171, 0, 255, 0.3)'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- External libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+    <style>
+        :root {
+            --neon-green: #00f5d4;
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff007f;
+            --neon-purple: #9d4edd;
+            --dark-bg: #0b0c10;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(circle at 50% 50%, #171026, #090a0f 85%);
+            background-size: 200% 200%;
+            animation: pulseBg 15s ease infinite;
+            color: #f1f5f9;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        @keyframes pulseBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f0f15;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-purple);
+            border-radius: 9999px;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                font-family: Arial, sans-serif !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-sheet {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 20px !important;
+                padding: 10px !important;
+                background: white !important;
+            }
+            .print-card {
+                border: 3px solid black !important;
+                border-radius: 12px !important;
+                padding: 20px !important;
+                page-break-inside: avoid !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                background: white !important;
+                color: black !important;
+            }
+            .print-qrcode img {
+                width: 160px !important;
+                height: 160px !important;
+                margin: 10px 0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row selection:bg-cyber-primary selection:text-white relative">
+
+    <!-- Toast Notifications Grid -->
+    <div id="toastNotificationBox" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none space-y-2"></div>
+
+    <!-- ==================== SIDEBAR: DESKTOP ONLY ==================== -->
+    <aside class="no-print hidden md:flex flex-col w-72 bg-cyber-panel border-r border-cyber-accent/30 p-5 fixed left-0 top-0 h-screen z-50 justify-between">
+        <div class="space-y-6">
+            <!-- Brand Section -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyber-primary to-cyber-accent flex items-center justify-center shadow-neon-pink">
+                    <i class="fa-solid fa-box-open text-white text-md"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE</span>
+                    <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
+                </div>
+            </div>
+
+            <!-- Native Status Indicators -->
+            <div class="border border-cyber-accent/20 bg-black/40 rounded p-3 text-[10px] space-y-1.5 font-mono">
+                <div class="flex justify-between items-center">
+                    <span>SYSTEM STATE:</span>
+                    <span class="text-green-500 font-bold"><i class="fa-solid fa-circle-check animate-pulse mr-1"></i>ONLINE</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>CLOUD LINK:</span>
+                    <span id="desktop-sync-status" class="text-amber-500 font-bold">LOCAL_DB</span>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Items -->
+            <nav class="flex flex-col space-y-2">
+                <button onclick="switchTab('dashboard')" id="desk-nav-dashboard" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-cyber-secondary font-bold font-mono text-sm">
+                    <i class="fa-solid fa-cubes w-5"></i> <span>BOX INVENTORY</span>
+                </button>
+                <button onclick="switchTab('pack')" id="desk-nav-pack" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-camera w-5"></i> <span>AI PACK STATION</span>
+                </button>
+                <button onclick="switchTab('scan')" id="desk-nav-scan" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-qrcode w-5"></i> <span>QR INVENTORY SCAN</span>
+                </button>
+                <button onclick="switchTab('rooms')" id="desk-nav-rooms" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-house-chimney-window w-5"></i> <span>ROOM PROGRESS</span>
+                </button>
+                <button onclick="switchTab('print')" id="desk-nav-print" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-print w-5"></i> <span>PRINT LABELS</span>
+                </button>
+                <button onclick="switchTab('settings')" id="desk-nav-settings" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-cloud-arrow-up w-5"></i> <span>CLOUD SYNC</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="border-t border-cyber-accent/10 pt-4 text-[10px] font-mono space-y-1 text-cyber-muted">
+            <span class="block font-bold text-cyber-primary">DEADLINE: JULY 14, 2026</span>
+            <span class="block">PNiX STUDIOS © 2026</span>
+        </div>
+    </aside>
+
+    <!-- ==================== MOBILE TOP HEADER ==================== -->
+    <header class="no-print border-b border-cyber-accent bg-cyber-panel/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-lg md:hidden w-full">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyber-primary to-cyber-accent flex items-center justify-center animate-pulse">
+                <i class="fa-solid fa-box-open text-white text-xs"></i>
+            </div>
+            <div>
+                <span class="text-lg font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE</span>
+                <span class="text-[8px] block text-cyber-secondary font-mono font-bold tracking-widest">PNiX PORTAL_V3</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 text-xs font-mono text-cyber-muted">
+            <span id="mobile-sync-indicator" class="inline-block w-2 h-2 rounded-full bg-green-500 animate-ping mr-1"></span>
+            <span id="mobile-sync-text">LOCAL</span>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+    <div class="flex-grow md:pl-72 w-full flex flex-col min-h-screen">
+        
+        <main class="flex-grow max-w-5xl w-full mx-auto p-4 pb-28 md:pb-8 space-y-6">
+
+            <!-- Banner / Notification for Moving Deadline -->
+            <div class="no-print border border-cyber-primary bg-cyber-primary/5 rounded-lg p-4 flex items-start space-x-3 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-cyber-primary/10 rounded-full blur-2xl -mr-6 -mt-6"></div>
+                <i class="fa-solid fa-triangle-exclamation text-cyber-primary text-xl mt-1 animate-bounce"></i>
+                <div class="flex-grow">
+                    <h4 class="font-bold text-cyber-primary text-sm tracking-wider uppercase">MOVE-OUT DEADLINE: JULY 14, 2026</h4>
+                    <p class="text-xs text-gray-300 mt-1 font-mono">Keep moving, Josh! Point the camera at any item, auto-pack, toggle your room checklists, and sync your inventory directly to **Google Sheets** for real-time tracking.</p>
+                </div>
+            </div>
+
+            <!-- App Loading Indicators for Heavy Libraries -->
+            <div id="ai-loading-banner" class="no-print mb-6 border border-cyber-secondary bg-cyber-secondary/5 rounded-lg p-3 flex flex-col space-y-2">
+                <div class="flex justify-between items-center text-xs text-cyber-secondary">
+                    <span class="font-mono"><i class="fa-solid fa-microchip mr-2 animate-spin"></i>INITIALIZING AI OBJECT RECOGNITION (TENSORFLOW.JS)...</span>
+                    <span id="ai-load-status">Loading...</span>
+                </div>
+                <div class="w-full bg-gray-900 rounded-full h-1">
+                    <div id="ai-progress-bar" class="bg-cyber-secondary h-1 rounded-full transition-all duration-300" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- ==================== TAB: DASHBOARD ==================== -->
+            <section id="tab-dashboard" class="no-print space-y-6">
+                <!-- Stats Row -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-cyber-panel border border-cyber-accent/30 rounded-lg p-3 text-center">
+                        <span class="text-[10px] uppercase tracking-wider text-cyber-muted block">Active Boxes</span>
+                        <span id="stat-boxes" class="text-2xl font-extrabold text-cyber-secondary">0</span>
+                    </div>
+                    <div class="bg-cyber-panel border border-cyber-accent/30 rounded-lg p-3 text-center">
+                        <span class="text-[10px] uppercase tracking-wider text-cyber-muted block">Packed Items</span>
+                        <span id="stat-items" class="text-2xl font-extrabold text-cyber-primary">0</span>
+                    </div>
+                    <div class="bg-cyber-panel border border-cyber-accent/30 rounded-lg p-3 text-center">
+                        <span class="text-[10px] uppercase tracking-wider text-cyber-muted block">Print Queue</span>
+                        <span id="stat-print" class="text-2xl font-extrabold text-cyber-accent">0</span>
+                    </div>
+                </div>
+
+                <!-- Manual Short-Code Lookup Bar -->
+                <div class="bg-cyber-panel border border-cyber-secondary/20 rounded-lg p-4 space-y-3">
+                    <h3 class="text-xs uppercase font-mono tracking-wider text-cyber-secondary font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i> Quick Short-Code Lookup</h3>
+                    <div class="flex space-x-2">
+                        <input id="dashboard-lookup-input" type="text" placeholder="Type Box Code (e.g. KT001, BR002-F)..." class="flex-grow bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary uppercase font-mono font-bold tracking-widest">
+                        <button onclick="performManualLookup()" class="px-4 py-2 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs transition font-mono">
+                            Find Box
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Box List Header & Add Button -->
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">My Boxes</h2>
+                    <button onclick="openAddBoxModal()" class="px-3 py-1.5 bg-cyber-secondary/10 hover:bg-cyber-secondary hover:text-cyber-bg text-cyber-secondary rounded-md border border-cyber-secondary text-xs transition duration-200 uppercase tracking-wider font-bold">
+                        <i class="fa-solid fa-plus mr-1"></i> New Box
+                    </button>
+                </div>
+
+                <!-- Box Grid -->
+                <div id="boxes-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Dynamic Content Will Go Here -->
+                </div>
+                
+                <div id="empty-boxes-view" class="hidden text-center py-12 border border-dashed border-cyber-muted/30 rounded-lg space-y-3">
+                    <i class="fa-solid fa-boxes-packing text-cyber-muted text-4xl animate-pulse"></i>
+                    <h3 class="text-md font-bold text-gray-400">No Boxes Created Yet</h3>
+                    <p class="text-xs text-cyber-muted max-w-xs mx-auto">Create your first box using short-codes to start assigning scanned items. You can generate custom labels right away.</p>
+                    <button onclick="openAddBoxModal()" class="px-4 py-2 bg-cyber-accent text-white text-xs rounded-md shadow-neon-purple hover:bg-cyber-accent/80 font-bold uppercase tracking-wider">
+                        Add Box #1
+                    </button>
+                </div>
+            </section>
+
+            <!-- ==================== TAB: PACK (AI CAMERA) ==================== -->
+            <section id="tab-pack" class="no-print hidden space-y-6">
+                <h2 class="text-lg font-bold text-cyber-primary uppercase tracking-widest border-l-4 border-cyber-primary pl-2">AI Packing Station</h2>
+                
+                <!-- Box Selector -->
+                <div class="bg-cyber-panel border border-cyber-primary/20 rounded-lg p-4 space-y-3">
+                    <label class="block text-xs uppercase tracking-wider text-cyber-primary font-bold">Select Destination Box</label>
+                    <select id="pack-box-select" class="w-full bg-cyber-bg border border-cyber-primary/30 rounded px-3 py-2 text-sm focus:outline-none focus:border-cyber-primary text-white font-mono font-bold tracking-wider">
+                        <!-- Dynamic Options -->
+                    </select>
+                </div>
+
+                <!-- Camera Viewfinder -->
+                <div class="relative bg-black rounded-lg overflow-hidden border-2 border-cyber-primary shadow-neon-pink max-w-2xl mx-auto w-full">
+                    <video id="viewfinder" autoplay playsinline muted class="w-full h-64 md:h-96 object-cover transform scale-x-[-1]"></video>
+                    <canvas id="snapshot-canvas" class="hidden"></canvas>
+                    
+                    <!-- Bounding Box Overlay for AI -->
+                    <div id="camera-overlay" class="absolute inset-0 pointer-events-none"></div>
+
+                    <!-- Control Buttons Over Camera -->
+                    <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-3 px-4">
+                        <button onclick="switchCamera()" class="p-3 bg-cyber-panel/80 hover:bg-cyber-panel border border-cyber-muted text-white rounded-full transition">
+                            <i class="fa-solid fa-camera-rotate"></i>
+                        </button>
+                        <button id="capture-btn" onclick="captureAndDetect()" class="px-6 py-3 bg-cyber-primary hover:bg-cyber-primary/80 text-white rounded-full font-bold uppercase tracking-wider shadow-neon-pink flex items-center space-x-2">
+                            <i class="fa-solid fa-expand"></i> <span>Scan & Detect</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detection Results Dashboard -->
+                <div id="detection-dashboard" class="hidden bg-cyber-panel border border-cyber-secondary/30 rounded-lg p-4 space-y-4 max-w-2xl mx-auto">
+                    <h3 class="text-sm font-bold text-cyber-secondary uppercase tracking-wider"><i class="fa-solid fa-brain mr-2 animate-pulse"></i>AI Detection Verdict</h3>
+                    
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-grow">
+                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Recognized Item Label</label>
+                            <input id="detected-item-label" type="text" class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary font-bold">
+                        </div>
+                        <div class="w-24">
+                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Confidence</label>
+                            <div id="detected-item-confidence" class="text-sm font-bold text-cyber-secondary py-2 border-b border-cyber-secondary/20">0%</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Item Description / Note (Optional)</label>
+                        <input id="detected-item-desc" type="text" placeholder="e.g. Red Ceramic, Fragile" class="w-full bg-cyber-bg border border-cyber-muted/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary">
+                    </div>
+
+                    <div class="flex space-x-2 pt-2">
+                        <button onclick="packDetectedItem()" class="flex-grow py-2.5 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs transition shadow-neon-cyan">
+                            <i class="fa-solid fa-box mr-1"></i> Pack Into Selected Box
+                        </button>
+                        <button onclick="discardDetection()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded text-xs uppercase tracking-wider">
+                            Discard
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB: SCAN (QR LOOKUP) ==================== -->
+            <section id="tab-scan" class="no-print hidden space-y-6">
+                <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">QR Inventory Scanner</h2>
+                
+                <div class="relative bg-black rounded-lg overflow-hidden border-2 border-cyber-secondary shadow-neon-cyan max-w-2xl mx-auto w-full">
+                    <!-- QR Scanner Viewport -->
+                    <div id="scanner-reader" class="w-full h-64 md:h-96"></div>
+                    
+                    <!-- Overlay Crosshair UI -->
+                    <div class="absolute inset-0 border-2 border-transparent flex items-center justify-center pointer-events-none">
+                        <div class="w-48 h-48 border-2 border-dashed border-cyber-secondary rounded-lg flex items-center justify-center relative">
+                            <div class="absolute inset-0 bg-cyber-secondary/5"></div>
+                            <div class="w-4 h-4 border-t-2 border-l-2 border-cyber-secondary absolute top-0 left-0"></div>
+                            <div class="w-4 h-4 border-t-2 border-r-2 border-cyber-secondary absolute top-0 right-0"></div>
+                            <div class="w-4 h-4 border-b-2 border-l-2 border-cyber-secondary absolute bottom-0 left-0"></div>
+                            <div class="w-4 h-4 border-b-2 border-r-2 border-cyber-secondary absolute bottom-0 right-0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scanned Box Details Sheet -->
+                <div id="scanned-box-result" class="hidden bg-cyber-panel border border-cyber-secondary/30 rounded-lg p-4 space-y-4 max-w-2xl mx-auto">
+                    <div class="flex justify-between items-start border-b border-cyber-secondary/20 pb-3">
+                        <div>
+                            <span class="text-xs uppercase font-mono text-cyber-secondary tracking-widest">SCANNED BOX CONTENT</span>
+                            <div class="flex items-center space-x-3 mt-1">
+                                <h3 id="scanned-box-title" class="text-xl font-bold text-white">Box Name</h3>
+                                <span id="scanned-box-badge" class="px-2 py-0.5 rounded bg-cyber-primary text-white text-xs font-mono font-bold tracking-widest">KT001-F</span>
+                            </div>
+                            <p id="scanned-box-meta" class="text-xs text-cyber-muted mt-0.5">Location: <span id="scanned-box-id" class="font-mono">Kitchen</span></p>
+                        </div>
+                        <button onclick="closeScannedResult()" class="text-cyber-muted hover:text-white p-1">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs uppercase font-bold text-cyber-muted tracking-wider mb-2">Contained Items</h4>
+                        <ul id="scanned-box-items-list" class="divide-y divide-cyber-muted/10 max-h-48 overflow-y-auto pr-2 space-y-1">
+                            <!-- Dynamic items -->
+                        </ul>
+                    </div>
+
+                    <div class="flex space-x-2 pt-2">
+                        <button onclick="quickPackForScanned()" class="flex-grow py-2 bg-cyber-secondary/10 hover:bg-cyber-secondary hover:text-cyber-bg text-cyber-secondary rounded font-bold uppercase tracking-wider text-xs border border-cyber-secondary transition">
+                            <i class="fa-solid fa-box-open mr-1"></i> Add More Items
+                        </button>
+                        <button onclick="printBoxLabelFromScanner()" class="px-4 py-2 bg-cyber-accent/20 hover:bg-cyber-accent text-white rounded text-xs uppercase tracking-wider border border-cyber-accent">
+                            <i class="fa-solid fa-print"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== TAB: ROOM PROGRESS (ROOM NOTES) ==================== -->
+            <section id="tab-rooms" class="no-print hidden space-y-6">
+                <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">Room Checklists & Progress</h2>
+                
+                <p class="text-xs text-cyber-muted font-mono leading-relaxed">
+                    Track the physical state of each room. Tap any checklist pill to toggle statuses (PACKED, REPAIRED, CLEANED, FINISHED). Type custom room notes and sync your changes.
+                </p>
+
+                <!-- Rooms Grid (Desktop Optimized Cards) -->
+                <div id="rooms-dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic Room Notes Cards -->
+                </div>
+            </section>
+
+            <!-- ==================== TAB: PRINT SHEET LABELS ==================== -->
+            <section id="tab-print" class="no-print hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-cyber-accent uppercase tracking-widest border-l-4 border-cyber-accent pl-2">Label Sheets Studio</h2>
+                    <button onclick="window.print()" class="px-4 py-2 bg-cyber-accent hover:bg-cyber-accent/80 text-white rounded-md shadow-neon-purple text-xs transition font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-print mr-1"></i> Print Labels
+                    </button>
+                </div>
+
+                <!-- Print Controls -->
+                <div class="bg-cyber-panel border border-cyber-accent/20 rounded-lg p-4 space-y-3">
+                    <h3 class="text-xs uppercase font-mono tracking-wider text-cyber-accent font-bold">Print Configuration</h3>
+                    <p class="text-xs text-cyber-muted">Ensure browser background graphics are enabled during print preview. For standard sticky label paper sheets (like Avery 2-by-2 labels), select 2-column portrait layout in the web print options.</p>
+                    
+                    <div class="flex justify-between items-center pt-2 text-xs border-t border-cyber-accent/10">
+                        <span>Active Box Count: <strong id="print-config-count" class="text-cyber-accent">0</strong></span>
+                        <button onclick="selectAllForPrint()" class="text-cyber-secondary hover:underline font-bold">Select All</button>
+                    </div>
+                </div>
+
+                <!-- Print Queue Selection Grid -->
+                <div id="print-queue-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic List of Boxes with Select Checkboxes and Mini-QR codes -->
+                </div>
+            </section>
+
+            <!-- ==================== TAB: CLOUD SYNC CONFIG ==================== -->
+            <section id="tab-settings" class="no-print hidden space-y-6 max-w-2xl mx-auto w-full">
+                <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">Google Sheets Cloud Connection</h2>
+                
+                <div class="bg-black/30 backdrop-blur-md border border-cyber-accent/30 rounded-3xl p-6 relative overflow-hidden group shadow-neon-purple">
+                    <h3 class="text-sm font-bold text-white font-mono flex items-center space-x-2">
+                        <i class="fa-solid fa-shield-halved text-cyber-secondary"></i>
+                        <span>Zero-Friction Sync Setup</span>
+                    </h3>
+                    <p class="text-xs text-cyber-muted leading-relaxed">
+                        Authorize this device by pasting your **Google Apps Script Web App URL** and shared secret passcode. Or, simply **scan the generated setup QR code** below with another device to sync them instantly without typing!
+                    </p>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Apps Script API Web App URL</label>
+                            <input id="settings-api-url" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Spreadsheet Access Token (Shared Secret)</label>
+                            <input id="settings-api-token" type="password" placeholder="Enter matching custom API_SECRET..." class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2 pt-2">
+                        <button onclick="saveApiUrlSettings()" class="flex-grow py-2.5 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs transition shadow-neon-cyan font-mono">
+                            <i class="fa-solid fa-lock-open mr-1"></i> Connect and Autosave
+                        </button>
+                        <button onclick="clearApiUrlSettings()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded text-xs uppercase tracking-wider font-mono">
+                            Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC CONFIG SETUP QR CODE GENERATOR -->
+                <div id="settings-qr-section" class="hidden bg-cyber-panel border border-cyber-secondary/20 rounded-lg p-5 flex flex-col items-center text-center space-y-4">
+                    <h4 class="text-xs uppercase font-mono tracking-widest font-bold text-cyber-secondary"><i class="fa-solid fa-qrcode mr-1 text-cyber-primary animate-ping"></i> Test Group Sync QR Key</h4>
+                    <p class="text-xs text-cyber-muted max-w-sm">Have other users in your moving group scan this QR code with their phone's **Pack & Trace QR Scanner** to instantly connect their devices to your sheet with zero keyboard entry!</p>
+                    
+                    <div id="settings-config-qr" class="bg-white p-3 rounded-lg flex items-center justify-center"></div>
+                    <span class="text-[9px] font-mono text-cyber-muted border border-cyber-muted/20 px-2 py-0.5 rounded">Setup Payload QR Code</span>
+                </div>
+
+                <div class="bg-cyber-panel border border-cyber-accent/10 rounded-lg p-4 space-y-2 text-xs font-mono">
+                    <h4 class="font-bold text-cyber-primary uppercase tracking-wide">Developer Trace logs</h4>
+                    <pre id="settings-sync-log" class="bg-black/50 p-3 rounded text-[10px] text-cyber-muted max-h-40 overflow-y-auto font-sans leading-relaxed">No active server transmissions. Running in offline LocalStorage fallback mode.</pre>
+                    <button onclick="testSheetFetch()" class="px-3 py-1.5 bg-cyber-accent/20 hover:bg-cyber-accent text-white border border-cyber-accent rounded text-[10px] uppercase font-bold tracking-wider font-mono">
+                        Test Connection & Sync
+                    </button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==================== MOBILE NAVIGATION BAR ==================== -->
+    <nav class="no-print fixed bottom-0 left-0 right-0 border-t border-cyber-accent/30 bg-cyber-panel/95 backdrop-blur-md py-2 px-1 z-40 shadow-2xl flex justify-around md:hidden">
+        <button id="nav-dashboard" onclick="switchTab('dashboard')" class="flex flex-col items-center space-y-1 text-cyber-secondary transition py-1 flex-1">
+            <i class="fa-solid fa-square-poll-vertical text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">Boxes</span>
+        </button>
+        <button id="nav-pack" onclick="switchTab('pack')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
+            <i class="fa-solid fa-camera text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">Pack AI</span>
+        </button>
+        <button id="nav-scan" onclick="switchTab('scan')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
+            <i class="fa-solid fa-qrcode text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">Scan</span>
+        </button>
+        <button id="nav-rooms" onclick="switchTab('rooms')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
+            <i class="fa-solid fa-list-check text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">Rooms</span>
+        </button>
+        <button id="nav-print" onclick="switchTab('print')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
+            <i class="fa-solid fa-print text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">Print</span>
+        </button>
+        <button id="nav-settings" onclick="switchTab('settings')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
+            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">Sync</span>
+        </button>
+    </nav>
+
+    <!-- ==================== PRINT SHEET VIEWPORT ==================== -->
+    <div id="print-container" class="print-only hidden">
+        <div id="print-sheet" class="print-sheet"></div>
+    </div>
+
+    <!-- ==================== ADD BOX MODAL ==================== -->
+    <div id="add-box-modal" class="no-print hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-950 border border-cyber-secondary/30 rounded-3xl p-6 w-full max-w-sm space-y-6 relative shadow-neon-cyan">
+            <div class="flex justify-between items-center border-b border-cyber-secondary/20 pb-3">
+                <h3 class="text-md font-bold uppercase tracking-wider text-cyber-secondary font-mono"><i class="fa-solid fa-square-plus mr-1.5 animate-pulse"></i> Assemble New Box</h3>
+                <button onclick="closeAddBoxModal()" class="text-cyber-muted hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs uppercase text-cyber-muted tracking-wider mb-1">Target Room / Destination</label>
+                    <select id="modal-box-room-select" class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary font-bold font-mono">
+                        <option value="BA">Bathroom (BA)</option>
+                        <option value="BR">Bedroom (BR)</option>
+                        <option value="KT">Kitchen (KT)</option>
+                        <option value="LR">Living Room (LR)</option>
+                        <option value="OF">Office (OF)</option>
+                        <option value="PR">Playroom (PR)</option>
+                        <option value="ST">Storage/General (ST)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-cyber-muted tracking-wider mb-1">Box Description / Label Name</label>
+                    <input id="modal-box-name" type="text" placeholder="e.g. Cooking Utensils & Pots" class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-cyber-muted tracking-wider mb-1">Special Handling Instructions</label>
+                    <select id="modal-box-handling-select" class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary font-bold font-mono text-cyber-primary">
+                        <option value="">Normal (Standard Handling)</option>
+                        <option value="-F">Fragile (-F)</option>
+                        <option value="-U">This Side Up (-U)</option>
+                        <option value="-H">Heavy (-H)</option>
+                        <option value="-D">Do Not Turn Over (-D)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-cyber-muted tracking-wider mb-1">Notes / Additional Specs</label>
+                    <textarea id="modal-box-desc" placeholder="e.g. Winter boots, fragile dinnerware wrapped in bubble wrap..." class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary h-20 resize-none leading-relaxed"></textarea>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="createNewBox()" class="flex-grow py-2 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs shadow-neon-cyan transition font-mono">
+                    Generate Code
+                </button>
+                <button onclick="closeAddBoxModal()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded text-xs uppercase tracking-wider font-mono">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== BOX ITEMS MODAL DIALOG ==================== -->
+    <div id="view-items-modal" class="no-print hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-950 border border-cyber-accent/30 rounded-3xl p-6 w-full max-w-md space-y-6 relative shadow-neon-purple">
+            <div class="flex justify-between items-center border-b border-cyber-accent/20 pb-3">
+                <div>
+                    <span id="items-modal-code" class="px-2 py-0.5 bg-cyber-secondary/10 border border-cyber-secondary/30 rounded text-cyber-secondary font-mono text-[9px] font-bold tracking-widest">BOXCODE</span>
+                    <span id="items-modal-room" class="text-[10px] uppercase font-mono text-cyber-accent tracking-widest ml-2">ROOM_METADATA</span>
+                    <h3 id="items-modal-title" class="text-lg font-bold text-white mt-2">Box Items</h3>
+                </div>
+                <button onclick="closeViewItemsModal()" class="text-cyber-muted hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="max-h-60 overflow-y-auto pr-2">
+                <ul id="items-modal-list" class="divide-y divide-cyber-muted/10 space-y-1">
+                    <!-- Dynamic Box items lists -->
+                </ul>
+            </div>
+
+            <div class="border-t border-cyber-accent/20 pt-4 space-y-3">
+                <label class="block text-xs uppercase text-cyber-muted tracking-wider font-bold font-mono">Manual Quick-Pack</label>
+                <div class="space-y-2">
+                    <div class="flex space-x-2">
+                        <input id="quick-add-item-input" type="text" placeholder="Item Name (e.g. Mixing Bowls)" class="flex-grow bg-cyber-bg border border-cyber-accent/30 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-accent">
+                        <input id="quick-add-item-qty" type="number" value="1" min="1" class="w-16 bg-cyber-bg border border-cyber-accent/30 rounded-xl px-2 py-1.5 text-xs text-white text-center focus:outline-none focus:border-cyber-accent font-bold font-mono">
+                    </div>
+                    <div class="flex space-x-2">
+                        <input id="quick-add-item-desc" type="text" placeholder="Note / Specs (e.g. stainless steel, fragile)" class="flex-grow bg-cyber-bg border border-cyber-accent/30 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-accent">
+                        <button onclick="quickPackManual()" class="px-4 py-1.5 bg-cyber-accent/20 hover:bg-cyber-accent text-white rounded-xl text-xs uppercase font-bold tracking-wider border border-cyber-accent transition font-mono">
+                            Pack
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center border-t border-cyber-accent/20 pt-4">
+                <button id="items-modal-print-btn" class="px-3 py-1.5 bg-cyber-secondary/10 hover:bg-cyber-secondary hover:text-cyber-bg text-cyber-secondary rounded border border-cyber-secondary text-xs uppercase font-bold tracking-wider transition">
+                    <i class="fa-solid fa-print"></i> Generate Label
+                </button>
+                <button onclick="closeViewItemsModal()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded text-xs uppercase tracking-wider">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Section -->
+    <script>
+        // App State
+        let db = {
+            boxes: [],
+            rooms: {}
+        };
+        let activeTab = 'dashboard';
+        let cocoModel = null;
+        let isAiLoaded = false;
+        let activeCameraStream = null;
+        let currentFacingMode = 'environment';
+        let selectedBoxIdForPack = null;
+        let scannerInst = null;
+        let activeEditItemId = null; // Track item inline editing state
+        let expandedRoomCode = null; // Track currently expanded room card inside Rooms progress
+        let expandedBoxIds = {}; // Map of box IDs expanded to show items nested under Room progress
+        let selectedAddPills = []; // Array of selected handling codes in Add Box modal (e.g. ["F", "U"])
+        let selectedEditPills = []; // Array of selected handling codes in Edit Box modal
+        let apiServerUrl = '';
+        let apiServerToken = '';
+
+        const roomMappings = {
+            "BA": "Bathroom",
+            "BR": "Bedroom",
+            "KT": "Kitchen",
+            "LR": "Living Room",
+            "OF": "Office",
+            "PR": "Playroom",
+            "ST": "Storage"
+        };
+
+        const handlingMappings = {
+            "-F": { label: "FRAGILE", icon: "fa-wine-glass", color: "bg-red-500/20 text-red-500 border-red-500/40", printIcon: "🍷" },
+            "-U": { label: "THIS SIDE UP", icon: "fa-arrow-up", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/40", printIcon: "⬆️⬆️" },
+            "-H": { label: "HEAVY", icon: "fa-weight-hanging", color: "bg-amber-500/20 text-amber-500 border-amber-500/40", printIcon: "⚖️" },
+            "-D": { label: "DO NOT TURN OVER", icon: "fa-rotate-left", color: "bg-purple-500/20 text-purple-500 border-purple-500/40", printIcon: "🚫🔄" }
+        };
+
+        const defaultBoxes = [
+            {
+                id: 'KT001-F',
+                name: 'Kitchen — Dinnerware',
+                roomCode: 'KT',
+                room: 'Kitchen',
+                desc: 'Wine glasses, crystal plates',
+                handlingCode: '-F',
+                items: [
+                    { id: 'item_1', label: 'Crystal Wine Glasses', desc: 'Fragile, wrapped in paper', count: 6 },
+                    { id: 'item_2', label: 'Porcelain Plates', desc: 'Set of 12', count: 12 }
+                ],
+                printQueue: true
+            },
+            {
+                id: 'BR001',
+                name: 'Closet — Heavy Winter Coats',
+                roomCode: 'BR',
+                room: 'Bedroom',
+                desc: 'Trench coats, parkas',
+                handlingCode: '',
+                items: [
+                    { id: 'item_3', label: 'Down Jacket', desc: 'North Face, black', count: 2 },
+                    { id: 'item_4', label: 'Wool Coats', desc: 'Grey', count: 3 }
+                ],
+                printQueue: false
+            }
+        ];
+
+        const defaultRoomsState = {
+            "BA": { name: "Bathroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "BR": { name: "Bedroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "KT": { name: "Kitchen", packed: true, repaired: false, cleaned: false, finished: false, note: "Double check spice cabinet storage drawers before locking." },
+            "LR": { name: "Living Room", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "OF": { name: "Office", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "PR": { name: "Playroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "ST": { name: "Storage", packed: false, repaired: false, cleaned: false, finished: false, note: "" }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            loadCocoSsdModel();
+            switchTab('dashboard');
+            renderApp();
+        });
+
+        function initDatabase() {
+            const savedData = localStorage.getItem('p_and_t_move_db_v4');
+            apiServerUrl = localStorage.getItem('p_and_t_api_url_v4') || '';
+            apiServerToken = localStorage.getItem('p_and_t_api_token_v4') || '';
+            
+            document.getElementById('settings-api-url').value = apiServerUrl;
+            document.getElementById('settings-api-token').value = apiServerToken;
+
+            if (savedData) {
+                try {
+                    db = JSON.parse(savedData);
+                    if (!db.rooms) db.rooms = defaultRoomsState;
+                } catch(e) {
+                    console.error("Failed to parse DB, resetting", e);
+                    db = { boxes: defaultBoxes, rooms: defaultRoomsState };
+                    saveDatabase();
+                }
+            } else {
+                db = { boxes: defaultBoxes, rooms: defaultRoomsState };
+                saveDatabase();
+            }
+
+            updateCloudStatusLabels();
+            if (apiServerUrl && apiServerToken) {
+                syncDataFromSheet();
+                renderConfigQrCode();
+            }
+        }
+
+        function saveDatabase() {
+            localStorage.setItem('p_and_t_move_db_v4', JSON.stringify(db));
+        }
+
+        function updateCloudStatusLabels() {
+            const deskLabel = document.getElementById('desktop-sync-status');
+            const mobIndicator = document.getElementById('mobile-sync-indicator');
+            const mobLabel = document.getElementById('mobile-sync-text');
+
+            if (apiServerUrl && apiServerToken) {
+                deskLabel.innerText = "SECURE_SYNC";
+                deskLabel.className = "text-cyber-secondary font-bold font-mono";
+                mobIndicator.className = "inline-block w-2 h-2 rounded-full bg-cyber-secondary animate-ping mr-1";
+                mobLabel.innerText = "CLOUD";
+                mobLabel.className = "text-cyber-secondary font-bold font-mono";
+            } else {
+                deskLabel.innerText = "LOCAL_DB";
+                deskLabel.className = "text-amber-500 font-bold font-mono";
+                mobIndicator.className = "inline-block w-2 h-2 rounded-full bg-green-500 animate-ping mr-1";
+                mobLabel.innerText = "LOCAL";
+                mobLabel.className = "text-green-500 font-bold font-mono";
+            }
+        }
+
+        // ==================== GOOGLE SHEETS CLOUD INTEGRATION ====================
+        function saveApiUrlSettings() {
+            const urlInput = document.getElementById('settings-api-url').value.trim();
+            const tokenInput = document.getElementById('settings-api-token').value.trim();
+
+            if (!urlInput || !tokenInput) {
+                alert("Please enter both the Apps Script Web App URL and your Custom Shared Passcode.");
+                return;
+            }
+
+            apiServerUrl = urlInput;
+            apiServerToken = tokenInput;
+            
+            localStorage.setItem('p_and_t_api_url_v4', urlInput);
+            localStorage.setItem('p_and_t_api_token_v4', tokenInput);
+            
+            updateCloudStatusLabels();
+            logSyncEvent("Secure cloud configuration initialized. Connecting...");
+            syncDataFromSheet();
+            renderConfigQrCode();
+        }
+
+        function clearApiUrlSettings() {
+            apiServerUrl = '';
+            apiServerToken = '';
+            localStorage.removeItem('p_and_t_api_url_v4');
+            localStorage.removeItem('p_and_t_api_token_v4');
+            updateCloudStatusLabels();
+            
+            document.getElementById('settings-api-url').value = '';
+            document.getElementById('settings-api-token').value = '';
+            document.getElementById('settings-qr-section').classList.add('hidden');
+            
+            logSyncEvent("Cloud connection terminated. Erased setup secrets. Running offline.");
+            alert("Disconnected from Google Sheets endpoint.");
+            renderApp();
+        }
+
+        function logSyncEvent(text) {
+            const logBox = document.getElementById('settings-sync-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logBox.innerText += `\n[${timestamp}] ${text}`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        async function syncDataFromSheet() {
+            if (!apiServerUrl || !apiServerToken) return;
+            logSyncEvent("GET request dispatched. Downloading spreadsheet records...");
+            
+            try {
+                // Pass static token in query parameter for read query
+                const targetUrl = `${apiServerUrl}?token=${encodeURIComponent(apiServerToken)}`;
+                
+                const response = await fetch(targetUrl);
+                if (response.ok) {
+                    const cloudData = await response.json();
+                    
+                    if (cloudData && cloudData.status === "error") {
+                        logSyncEvent(`Spreadsheet validation failure: ${cloudData.message}. Verify matching passcode.`);
+                        showToast("Access Denied!");
+                        return;
+                    }
+
+                    if (cloudData && cloudData.boxes) {
+                        db.boxes = cloudData.boxes;
+                        if (cloudData.rooms) {
+                            db.rooms = cloudData.rooms;
+                        }
+                        saveDatabase();
+                        renderApp();
+                        logSyncEvent(`Synchronized! Successfully fetched ${cloudData.boxes.length} containers and checklists.`);
+                        showToast("Cloud Sync Successful!");
+                    }
+                } else {
+                    logSyncEvent(`Sync failure. HTTP Server Status: ${response.status}`);
+                }
+            } catch(e) {
+                logSyncEvent(`Network connection trace issue: ${e.message}. Retaining active local buffer.`);
+            }
+        }
+
+        async function testSheetFetch() {
+            if (!apiServerUrl || !apiServerToken) {
+                alert("Please configure a Google Sheet URL and Token in settings first.");
+                return;
+            }
+            await syncDataFromSheet();
+        }
+
+        async function pushBoxToCloud(box) {
+            if (!apiServerUrl || !apiServerToken) return;
+            logSyncEvent(`Autosaving box ${box.id} row to cloud spreadsheet...`);
+            try {
+                const payload = {
+                    token: apiServerToken,
+                    action: "addBox",
+                    id: box.id,
+                    name: box.name,
+                    roomCode: box.roomCode,
+                    room: box.room,
+                    desc: box.desc,
+                    handlingCode: box.handlingCode
+                };
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                logSyncEvent(`Success: appended box row for ${box.id}.`);
+            } catch(e) {
+                logSyncEvent(`Cloud write warning: ${e.message}. Buffered locally.`);
+            }
+        }
+
+        async function pushItemToCloud(boxId, item) {
+            if (!apiServerUrl || !apiServerToken) return;
+            logSyncEvent(`Autosaving packed item [${item.label}] row to cloud...`);
+            try {
+                const payload = {
+                    token: apiServerToken,
+                    action: "addItem",
+                    boxId: boxId,
+                    label: item.label,
+                    desc: item.desc || "",
+                    count: item.count
+                };
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                logSyncEvent(`Success: item appended under box ${boxId}.`);
+            } catch(e) {
+                logSyncEvent(`Cloud write warning: ${e.message}. Buffered locally.`);
+            }
+        }
+
+        async function pushRoomStatusToCloud(roomCode, roomObj) {
+            if (!apiServerUrl || !apiServerToken) return;
+            logSyncEvent(`Autosaving room state checks for [${roomCode}] to cloud...`);
+            try {
+                const payload = {
+                    token: apiServerToken,
+                    action: "updateRoom",
+                    roomCode: roomCode,
+                    packed: roomObj.packed,
+                    repaired: roomObj.repaired,
+                    cleaned: roomObj.cleaned,
+                    finished: roomObj.finished,
+                    note: roomObj.note || ""
+                };
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                logSyncEvent(`Success: updated status index for room ${roomCode}.`);
+            } catch(e) {
+                logSyncEvent(`Cloud write warning: ${e.message}. Buffered locally.`);
+            }
+        }
+
+        // ==================== ZERO-FRICTION CONFIG QR GENERATION ====================
+        function renderConfigQrCode() {
+            if (!apiServerUrl || !apiServerToken) return;
+            
+            const qrContainer = document.getElementById('settings-config-qr');
+            const qrSection = document.getElementById('settings-qr-section');
+            qrContainer.innerHTML = '';
+
+            // Package credentials payload inside a lightweight JSON block
+            const configPayload = {
+                type: "moveconfig",
+                url: apiServerUrl,
+                token: apiServerToken
+            };
+
+            const payloadStr = JSON.stringify(configPayload);
+
+            try {
+                // Generate secure setup QR code
+                const qr = qrcode(12, 'L'); // Type 12 supports large string lengths
+                qr.addData(payloadStr);
+                qr.make();
+                
+                qrContainer.innerHTML = qr.createImgTag(4, 4);
+                qrSection.classList.remove('hidden');
+            } catch(err) {
+                console.error("Config QR generation failure", err);
+                qrSection.classList.add('hidden');
+            }
+        }
+
+
+        // ==================== ALL CORE JS CODE FUNCTIONS REMAIN INTEGRAL AND STABLE ====================
+        async function loadCocoSsdModel() {
+            const banner = document.getElementById('ai-loading-banner');
+            const progress = document.getElementById('ai-progress-bar');
+            const loadText = document.getElementById('ai-load-status');
+            try {
+                progress.style.width = '40%';
+                cocoModel = await cocoSsd.load();
+                progress.style.width = '100%';
+                loadText.innerText = 'ONLINE';
+                isAiLoaded = true;
+                setTimeout(() => {
+                    banner.classList.add('transition-opacity', 'duration-1000', 'opacity-0');
+                    setTimeout(() => banner.style.display = 'none', 1000);
+                }, 2000);
+            } catch(e) {
+                console.error("AI failure loading", e);
+            }
+        }
+
+        function switchTab(tabId) {
+            if (activeTab === 'pack' && tabId !== 'pack') stopCamera();
+            if (activeTab === 'scan' && tabId !== 'scan') stopScanner();
+            activeTab = tabId;
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.querySelectorAll('aside nav > button').forEach(btn => {
+                btn.classList.remove('text-cyber-primary', 'text-cyber-secondary', 'text-cyber-accent');
+                btn.classList.add('text-slate-400');
+            });
+            document.querySelectorAll('nav > button').forEach(btn => {
+                btn.classList.remove('text-cyber-secondary', 'text-cyber-primary', 'text-cyber-accent');
+                btn.classList.add('text-cyber-muted');
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const navBtn = document.getElementById(`nav-${tabId}`);
+            const deskBtn = document.getElementById(`desk-nav-${tabId}`);
+            let color = 'text-cyber-secondary';
+            if (tabId === 'pack') color = 'text-cyber-primary';
+            if (tabId === 'print') color = 'text-cyber-accent';
+            if (navBtn) navBtn.classList.add(color);
+            if (deskBtn) deskBtn.classList.add(color, 'bg-cyber-primary/10');
+            if (tabId === 'pack') startCamera();
+            if (tabId === 'scan') startScanner();
+            renderApp();
+        }
+
+        function performManualLookup() {
+            const input = document.getElementById('dashboard-lookup-input');
+            const code = input.value.trim().toUpperCase();
+            if (!code) return;
+            const box = db.boxes.find(b => b.id.toUpperCase() === code || b.id.toUpperCase().split('-')[0] === code);
+            if (box) {
+                openViewItemsModal(box.id);
+                input.value = '';
+            } else {
+                alert(`Box "${code}" not found.`);
+            }
+        }
+
+        function renderApp() {
+            updateStats();
+            renderBoxesDashboard();
+            renderBoxDropdownForPack();
+            renderPrintQueueGrid();
+            renderPrintSheetLayout();
+            renderRoomsProgressDashboard();
+        }
+
+        function updateStats() {
+            const boxesCount = db.boxes.length;
+            const itemsCount = db.boxes.reduce((acc, b) => acc + b.items.reduce((sum, i) => sum + i.count, 0), 0);
+            const queuedCount = db.boxes.filter(b => b.printQueue).length;
+            document.getElementById('stat-boxes').innerText = boxesCount;
+            document.getElementById('stat-items').innerText = itemsCount;
+            document.getElementById('stat-print').innerText = queuedCount;
+            document.getElementById('print-config-count').innerText = queuedCount;
+        }
+
+        function renderBoxesDashboard() {
+            const grid = document.getElementById('boxes-grid');
+            const emptyView = document.getElementById('empty-boxes-view');
+            grid.innerHTML = '';
+            if (db.boxes.length === 0) {
+                grid.classList.add('hidden');
+                emptyView.classList.remove('hidden');
+                return;
+            }
+            grid.classList.remove('hidden');
+            emptyView.classList.add('hidden');
+            db.boxes.forEach(box => {
+                const totalItemQty = box.items.reduce((sum, item) => sum + item.count, 0);
+                let handlingBadge = '';
+                if (box.handlingCode && handlingMappings[box.handlingCode]) {
+                    const match = handlingMappings[box.handlingCode];
+                    handlingBadge = `<span class="px-2 py-0.5 text-[8px] font-bold border rounded ${match.color} uppercase tracking-wider flex items-center space-x-1"><i class="fa-solid ${match.icon} mr-0.5"></i> ${match.label}</span>`;
+                }
+                const card = document.createElement('div');
+                card.className = 'bg-cyber-panel border border-cyber-secondary/30 rounded-lg p-4 flex flex-col justify-between hover:border-cyber-secondary transition relative overflow-hidden group';
+                card.innerHTML = `
+                    <div class="absolute top-0 right-0 w-2 h-2 rounded-full m-3 ${box.printQueue ? 'bg-cyber-accent animate-ping' : 'bg-transparent'}"></div>
+                    <div>
+                        <div class="flex justify-between items-start flex-wrap gap-2">
+                            <span class="px-2.5 py-0.5 bg-cyber-secondary/10 border border-cyber-secondary/30 rounded text-cyber-secondary font-mono text-xs font-bold tracking-widest">${box.id}</span>
+                            ${handlingBadge}
+                        </div>
+                        <h3 class="text-md font-bold text-white mt-2.5 uppercase tracking-wide truncate">${box.name}</h3>
+                        <p class="text-xs text-cyber-muted mt-1 font-mono line-clamp-1">${box.desc || 'No description'}</p>
+                    </div>
+                    <div class="border-t border-cyber-secondary/10 mt-4 pt-3 flex justify-between items-center text-xs">
+                        <span class="font-mono text-cyber-muted">${box.items.length} classes (${totalItemQty} qty)</span>
+                        <div class="flex space-x-2">
+                            <button onclick="openViewItemsModal('${box.id}')" class="px-2.5 py-1 bg-cyber-secondary/10 text-cyber-secondary hover:bg-cyber-secondary hover:text-cyber-bg rounded transition uppercase tracking-wider font-bold text-[10px]">
+                                <i class="fa-solid fa-layer-group"></i> Items
+                            </button>
+                            <button onclick="toggleBoxPrintQueue('${box.id}')" class="px-2.5 py-1 ${box.printQueue ? 'bg-cyber-accent text-white' : 'bg-slate-800 text-slate-400'} rounded-lg transition" title="Toggle Print Queue">
+                                <i class="fa-solid fa-print"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleBoxPrintQueue(id) {
+            const box = db.boxes.find(b => b.id === id);
+            if (box) {
+                box.printQueue = !box.printQueue;
+                saveDatabase();
+                renderApp();
+            }
+        }
+
+        function renderRoomsDashboard() {
+            const grid = document.getElementById('rooms-dashboard-grid');
+            grid.innerHTML = '';
+            Object.keys(db.rooms).forEach(code => {
+                const room = db.rooms[code];
+                let pillElementsHtml = '';
+                ['packed', 'repaired', 'cleaned', 'finished'].forEach(pKey => {
+                    const isActive = room[pKey];
+                    let styles = 'border border-gray-800 text-gray-500 bg-transparent';
+                    if (isActive) {
+                        if (pKey === 'packed') styles = 'border border-green-500 text-white bg-green-500/20 shadow-[0_0_5px_rgba(34,197,94,0.3)]';
+                        if (pKey === 'repaired') styles = 'border border-amber-500 text-white bg-amber-500/20 shadow-[0_0_5px_rgba(245,158,11,0.3)]';
+                        if (pKey === 'cleaned') styles = 'border border-cyber-secondary text-white bg-cyber-secondary/20 shadow-neon-cyan';
+                        if (pKey === 'finished') styles = 'border border-cyber-primary text-white bg-cyber-primary/20 shadow-neon-pink';
+                    }
+                    pillElementsHtml += `
+                        <button onclick="toggleRoomStatusPill('${code}', '${pKey}')" class="px-2 py-0.5 rounded text-[8px] font-bold uppercase transition ${styles}">
+                            ${pKey.toUpperCase()}
+                        </button>
+                    `;
+                });
+                
+                const matchingBoxes = db.boxes.filter(b => b.roomCode === code);
+                const boxesInRoom = matchingBoxes.length;
+                const itemsInRoom = matchingBoxes.reduce((sum, b) => sum + b.items.reduce((s, i) => s + i.count, 0), 0);
+                
+                // Construct Nested Inventory HTML if Expanded
+                let expandedInventoryHtml = '';
+                if (expandedRoomCode === code) {
+                    expandedInventoryHtml += `
+                        <div class="bg-black/50 backdrop-blur-md rounded-2xl border border-cyber-accent/20 p-3 mt-4 space-y-3 relative z-15">
+                            <span class="text-[9px] uppercase tracking-widest text-cyber-accent font-bold font-mono">📦 Room Containers Inventory</span>
+                    `;
+                    
+                    if (matchingBoxes.length === 0) {
+                        expandedInventoryHtml += `<div class="text-[10px] text-cyber-muted font-mono py-2 text-center">No containers in this room.</div>`;
+                    } else {
+                        matchingBoxes.forEach(box => {
+                            const isBoxExpanded = !!expandedBoxIds[box.id];
+                            
+                            // Map nested items inside box
+                            let boxItemsHtml = '';
+                            if (isBoxExpanded) {
+                                boxItemsHtml += `<ul class="pl-4 mt-2 border-l border-cyber-secondary/20 space-y-1.5 pb-2">`;
+                                if (box.items.length === 0) {
+                                    boxItemsHtml += `<li class="text-[10px] text-cyber-muted italic">This box is empty.</li>`;
+                                } else {
+                                    box.items.forEach(item => {
+                                        boxItemsHtml += `
+                                            <li class="flex justify-between items-center text-[10px] font-mono border-b border-white/5 py-1">
+                                                <span class="text-gray-300 font-bold uppercase">${item.label} (x${item.count})</span>
+                                                <button onclick="deleteItemFromNestedTree('${box.id}', '${item.id}')" class="text-red-400 hover:text-red-500 p-0.5" title="Delete Packed Item">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </li>`;
+                                    });
+                                }
+                                boxItemsHtml += `</ul>`;
+                            }
+
+                            expandedInventoryHtml += `
+                                <div class="border-b border-cyber-secondary/10 pb-2">
+                                    <div class="flex justify-between items-center">
+                                        <TouchableOpacity onclick="toggleBoxExpansion('${box.id}')" class="flex-grow cursor-pointer flex items-center space-x-2">
+                                            <i class="fa-solid ${isBoxExpanded ? 'fa-square-minus text-cyber-secondary' : 'fa-square-plus text-cyber-secondary'}"></i>
+                                            <span class="font-bold text-white uppercase text-[10px] tracking-wide">${box.id} — ${box.name}</span>
+                                        </TouchableOpacity>
+                                        <div class="flex space-x-2">
+                                            <button onclick="deleteBoxFromNestedTree('${box.id}')" class="text-red-400 hover:text-red-500 p-1" title="Delete Box">
+                                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    ${boxItemsHtml}
+                                </div>`;
+                        });
+                    }
+                    expandedInventoryHtml += `</div>`;
+                }
+
+                const roomCard = document.createElement('div');
+                roomCard.className = 'bg-black/30 backdrop-blur-md rounded-3xl border border-slate-800/60 p-6 flex flex-col justify-between group hover:border-slate-700/80 transition-all duration-300 relative overflow-hidden';
+                roomCard.innerHTML = `
+                    <!-- Hover Edge Accent -->
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-gradient-to-b from-cyber-accent to-cyber-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <!-- Glowing Blob -->
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-cyber-accent/5 rounded-full blur-2xl transition-all"></div>
+                    
+                    <div class="relative z-10 w-full">
+                        <div class="flex justify-between items-center border-b border-cyber-accent/10 pb-2 mb-3">
+                            <h3 class="text-md font-bold text-white uppercase font-mono tracking-wide">${room.name}</h3>
+                            <span class="text-[9px] font-mono text-cyber-accent font-extrabold border border-cyber-accent/40 px-1.5 py-0.5 rounded">${code}</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 mb-4">
+                            ${pillElementsHtml}
+                        </div>
+                        <div class="text-[10px] font-mono text-cyber-muted space-x-3 mb-3">
+                            <span>📦 ${boxesInRoom} boxes</span>
+                            <span>• ${itemsInRoom} items</span>
+                        </div>
+                        <div class="space-y-1">
+                            <textarea id="note-text-${code}" onchange="updateRoomNoteValue('${code}')" placeholder="Add specific room notes or checklists..." class="w-full bg-black/40 border border-cyber-accent/10 rounded p-2 text-[10px] text-gray-300 focus:outline-none focus:border-cyber-secondary resize-none font-sans h-16 leading-relaxed">${room.note || ''}</textarea>
+                        </div>
+                        
+                        <!-- Collapsible Inventory Area -->
+                        ${expandedInventoryHtml}
+
+                        <!-- Expansion Toggle Button -->
+                        <div class="flex justify-end pt-3 border-t border-cyber-accent/10 mt-3">
+                            <button onclick="toggleRoomExpansion('${code}')" class="px-2.5 py-1 bg-cyber-accent/10 hover:bg-cyber-accent text-white hover:text-black rounded-xl text-[9px] font-bold uppercase tracking-wider font-mono transition flex items-center space-x-1">
+                                <i class="fa-solid ${expandedRoomCode === code ? 'fa-folder-open' : 'fa-folder-closed'}"></i>
+                                <span>${expandedRoomCode === code ? 'Close Inventory' : 'Open Inventory'}</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(roomCard);
+            });
+        }
+
+
+        // ==================== NESTED EXPANSION & DELETION SYSTEM ====================
+        function toggleRoomExpansion(roomCode) {
+            expandedRoomCode = (expandedRoomCode === roomCode ? null : roomCode);
+            renderRoomsDashboard();
+        }
+
+        function toggleBoxExpansion(boxId) {
+            expandedBoxIds[boxId] = !expandedBoxIds[boxId];
+            renderRoomsDashboard();
+        }
+
+        function deleteBoxFromModal() {
+            const id = document.getElementById('edit-box-id-hidden').value;
+            if (!id) return;
+            
+            if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete Box "${id}" and all of its packed items?`)) {
+                // Delete locally
+                db.boxes = db.boxes.filter(b => b.id !== id);
+                saveDatabase();
+                closeEditBoxModal();
+                renderApp();
+                
+                // Delete on Sheets
+                deleteBoxOnCloud(id);
+                showToast(`Box ${id} deleted.`);
+            }
+        }
+
+        function deleteBoxFromNestedTree(boxId) {
+            if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete Box "${boxId}" and all of its packed items?`)) {
+                db.boxes = db.boxes.filter(b => b.id !== boxId);
+                saveDatabase();
+                renderApp();
+                
+                deleteBoxOnCloud(boxId);
+                showToast(`Box ${boxId} deleted.`);
+            }
+        }
+
+        function deleteItemFromNestedTree(boxId, itemId) {
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            
+            const item = box.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            if (confirm(`Are you sure you want to delete "${item.label}" from Box ${boxId}?`)) {
+                box.items = box.items.filter(i => i.id !== itemId);
+                saveDatabase();
+                renderApp();
+                
+                deleteItemOnCloud(boxId, item.label);
+                showToast(`Item "${item.label}" deleted.`);
+            }
+        }
+
+        async function deleteBoxOnCloud(boxId) {
+            if (!apiServerUrl || !apiServerToken) return;
+            try {
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: apiServerToken,
+                        action: "deleteBox",
+                        id: boxId
+                    })
+                });
+                logSyncEvent(`Success: Cascading delete executed on Sheet for box ${boxId}.`);
+            } catch(e) {
+                logSyncEvent(`Delete push warning: ${e.message}`);
+            }
+        }
+
+        async function deleteItemOnCloud(boxId, itemLabel) {
+            if (!apiServerUrl || !apiServerToken) return;
+            try {
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: apiServerToken,
+                        action: "deleteItem",
+                        boxId: boxId,
+                        label: itemLabel
+                    })
+                });
+                logSyncEvent(`Success: Item [${itemLabel}] deleted from Sheet.`);
+            } catch(e) {
+                logSyncEvent(`Delete push warning: ${e.message}`);
+            }
+        }
+
+        function toggleRoomStatusPill(roomCode, pillKey) {
+            db.rooms[roomCode][pillKey] = !db.rooms[roomCode][pillKey];
+            saveDatabase();
+            renderRoomsDashboard();
+            pushRoomStatusToCloud(roomCode, db.rooms[roomCode]);
+        }
+
+        function updateRoomNoteValue(roomCode) {
+            const textVal = document.getElementById(`note-text-${roomCode}`).value.trim();
+            db.rooms[roomCode].note = textVal;
+            saveDatabase();
+            pushRoomStatusToCloud(roomCode, db.rooms[roomCode]);
+            showToast(`Room Note Saved for ${roomCode}`);
+        }
+
+        function renderRoomsProgressDashboard() {
+            if (activeTab === 'rooms') renderRoomsDashboard();
+        }
+
+        function createNewBox() {
+            const roomCode = document.getElementById('modal-box-room-select').value;
+            const handlingCode = document.getElementById('modal-box-handling-select').value;
+            const existingCount = db.boxes.filter(b => b.roomCode === roomCode).length;
+            const serial = String(existingCount + 1).padStart(3, '0');
+            const boxId = `${roomCode}${serial}${handlingCode}`;
+            const name = document.getElementById('modal-box-name').value.trim();
+            const desc = document.getElementById('modal-box-desc').value.trim();
+            if (!name) {
+                alert("Box descriptive name is required!");
+                return;
+            }
+            const newBox = {
+                id: boxId,
+                name: name,
+                roomCode: roomCode,
+                room: roomMappings[roomCode] || 'Storage',
+                desc: desc,
+                handlingCode: handlingCode,
+                items: [],
+                printQueue: true
+            };
+            db.boxes.push(newBox);
+            saveDatabase();
+            closeAddBoxModal();
+            renderApp();
+            pushBoxToCloud(newBox);
+            showToast(`Box ${boxId} Created Successfully!`);
+        }
+
+
+        function renderBoxDropdownForPack() {
+            const select = document.getElementById("pack-box-select");
+            if (!select) return;
+            select.innerHTML = "";
+            
+            if (db.boxes.length === 0) {
+                select.innerHTML = "<option value=\"\">(No boxes. Create one first!)</option>";
+                return;
+            }
+
+            db.boxes.forEach(box => {
+                const opt = document.createElement("option");
+                opt.value = box.id;
+                opt.text = `${box.id} — ${box.name}`;
+                if (selectedBoxIdForPack === box.id) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+
+            if (!selectedBoxIdForPack && db.boxes.length > 0) {
+                selectedBoxIdForPack = db.boxes[0].id;
+            }
+        }
+
+        function openAddBoxModal() {
+            selectedAddPills = [];
+            updatePillVisuals("add", selectedAddPills);
+            document.getElementById('add-box-modal').classList.remove('hidden');
+        }
+
+        function closeAddBoxModal() {
+            selectedAddPills = [];
+            updatePillVisuals("add", selectedAddPills);
+            document.getElementById('add-box-modal').classList.add('hidden');
+            document.getElementById('modal-box-name').value = '';
+            document.getElementById('modal-box-desc').value = '';
+            document.getElementById('modal-box-handling-select').value = '';
+        }
+
+
+
+        // ==================== PILL MULTI-SELECT HANDLERS ====================
+        const pillStyles = {
+            "F": { active: "bg-red-500/20 border-red-500 text-white shadow-neon-pink", inactive: "border-red-500/30 text-red-500 bg-transparent" },
+            "U": { active: "bg-emerald-500/20 border-emerald-500 text-white shadow-neon-cyan", inactive: "border-emerald-500/30 text-emerald-500 bg-transparent" },
+            "H": { active: "bg-amber-500/20 border-amber-500 text-white shadow-neon-orange", inactive: "border-amber-500/30 text-amber-500 bg-transparent" },
+            "D": { active: "bg-purple-500/20 border-purple-500 text-white shadow-neon-purple", inactive: "border-purple-500/30 text-purple-500 bg-transparent" },
+            "S": { active: "bg-cyan-500/20 border-cyan-500 text-white shadow-neon-cyan", inactive: "border-cyan-500/30 text-cyan-500 bg-transparent" }
+        };
+
+        function toggleAddPill(code) {
+            const idx = selectedAddPills.indexOf(code);
+            if (idx > -1) {
+                selectedAddPills.splice(idx, 1);
+            } else {
+                selectedAddPills.push(code);
+            }
+            updatePillVisuals("add", selectedAddPills);
+        }
+
+        function toggleEditPill(code) {
+            const idx = selectedEditPills.indexOf(code);
+            if (idx > -1) {
+                selectedEditPills.splice(idx, 1);
+            } else {
+                selectedEditPills.push(code);
+            }
+            updatePillVisuals("edit", selectedEditPills);
+        }
+
+        function updatePillVisuals(prefix, list) {
+            Object.keys(pillStyles).forEach(code => {
+                const el = document.getElementById(`${prefix}-pill-${code}`);
+                if (!el) return;
+                
+                const styles = pillStyles[code];
+                const isActive = list.indexOf(code) > -1;
+                
+                // Clear out prior styles and apply current state
+                el.className = `px-2.5 py-1 rounded-xl text-[10px] font-bold border transition uppercase font-mono ${isActive ? styles.active : styles.inactive}`;
+            });
+        }
+
+        // ==================== BOX EDITING METADATA ====================
+        function openEditBoxModal(boxId) {
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+
+            document.getElementById('edit-box-id-hidden').value = box.id;
+            document.getElementById('edit-box-room-select').value = box.roomCode || 'ST';
+            document.getElementById('edit-box-name').value = box.name || '';
+            document.getElementById('edit-box-desc').value = box.desc || '';
+
+            // Extract selected pills from the box suffix (e.g. "-FUH" -> ["F", "U", "H"])
+            selectedEditPills = [];
+            if (box.handlingCode && box.handlingCode.startsWith("-")) {
+                selectedEditPills = box.handlingCode.replace("-", "").split("");
+            }
+            updatePillVisuals("edit", selectedEditPills);
+
+            document.getElementById('edit-box-modal').classList.remove('hidden');
+        }
+
+        function closeEditBoxModal() {
+            selectedEditPills = [];
+            updatePillVisuals("edit", selectedEditPills);
+            document.getElementById('edit-box-modal').classList.add('hidden');
+        }
+
+        function saveBoxDetails() {
+            const id = document.getElementById('edit-box-id-hidden').value;
+            const roomCode = document.getElementById('edit-box-room-select').value;
+            const name = document.getElementById('edit-box-name').value.trim();
+            const desc = document.getElementById('edit-box-desc').value.trim();
+            
+            // Compile edit suffix
+            let handlingCode = "";
+            if (selectedEditPills.length > 0) {
+                const sortedPills = ["F", "U", "H", "D", "S"].filter(p => selectedEditPills.indexOf(p) > -1);
+                handlingCode = "-" + sortedPills.join("");
+            }
+
+            if (!name) {
+                alert("Box descriptive name is required!");
+                return;
+            }
+
+            const box = db.boxes.find(b => b.id === id);
+            if (box) {
+                box.name = name;
+                box.roomCode = roomCode;
+                box.room = roomMappings[roomCode] || 'Storage';
+                box.handlingCode = handlingCode;
+                box.desc = desc;
+
+                saveDatabase();
+                closeEditBoxModal();
+                renderApp();
+                pushBoxToCloud(box); // Push modified box row directly to Google Sheets!
+                showToast(`Box ${id} Details Saved!`);
+            }
+        }
+
+        // ==================== INLINE ITEM EDITING SYSTEM ====================
+        function enableItemInlineEdit(itemId) {
+            activeEditItemId = itemId;
+            renderItemsModalList();
+        }
+
+        function cancelItemEdit() {
+            activeEditItemId = null;
+            renderItemsModalList();
+        }
+
+        function saveItemDetails(itemId) {
+            const box = db.boxes.find(b => b.id === activeModalBoxId);
+            if (!box) return;
+
+            const item = box.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const labelInput = document.getElementById(`edit-item-label-${itemId}`);
+            const descInput = document.getElementById(`edit-item-desc-${itemId}`);
+            const countInput = document.getElementById(`edit-item-count-${itemId}`);
+
+            const newLabel = labelInput.value.trim();
+            const newDesc = descInput.value.trim();
+            const newCount = parseInt(countInput.value, 10) || 1;
+
+            if (!newLabel) {
+                alert("Item label is required!");
+                return;
+            }
+
+            item.label = newLabel;
+            item.desc = newDesc;
+            item.count = newCount;
+
+            saveDatabase();
+            activeEditItemId = null;
+            renderItemsModalList();
+            renderApp();
+            
+            // Push item update directly to Google Sheets!
+            pushItemToCloud(box.id, item);
+            showToast(`Item "${newLabel}" Saved!`);
+        }
+
+        function openViewItemsModal(boxId) {
+            activeModalBoxId = boxId;
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            document.getElementById('items-modal-title').innerText = box.name;
+            
+            const codeEl = document.getElementById('items-modal-code');
+            if (codeEl) codeEl.innerText = box.id;
+            
+            const roomEl = document.getElementById('items-modal-room');
+            if (roomEl) roomEl.innerText = box.room + " | " + box.roomCode;
+            const printBtn = document.getElementById('items-modal-print-btn');
+            printBtn.onclick = () => {
+                db.boxes.forEach(b => b.printQueue = false);
+                box.printQueue = true;
+                saveDatabase();
+                closeViewItemsModal();
+                switchTab('print');
+            };
+            renderItemsModalList();
+            document.getElementById('view-items-modal').classList.remove('hidden');
+        }
+
+        function closeViewItemsModal() {
+            document.getElementById('view-items-modal').classList.add('hidden');
+            document.getElementById('quick-add-item-input').value = '';
+            activeModalBoxId = null;
+        }
+
+        function renderItemsModalList() {
+            const list = document.getElementById('items-modal-list');
+            list.innerHTML = '';
+            const box = db.boxes.find(b => b.id === activeModalBoxId);
+            if (!box || box.items.length === 0) {
+                list.innerHTML = '<li class="text-xs text-cyber-muted text-center py-4 font-mono">No items packed.</li>';
+                return;
+            }
+            box.items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center py-2 text-xs border-b border-cyber-muted/10';
+                li.innerHTML = `<div><span class="font-bold text-white uppercase">${item.label}</span>${item.desc ? `<p class="text-[10px] text-cyber-muted font-mono">${item.desc}</p>` : ''}</div><div class="flex items-center space-x-3"><div class="flex items-center space-x-2"><button onclick="updateItemQty('${box.id}', '${item.id}', -1)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center font-bold font-mono">-</button><span class="font-bold text-cyber-secondary font-mono">${item.count}</span><button onclick="updateItemQty('${box.id}', '${item.id}', 1)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center font-bold font-mono">+</button></div><button onclick="removeItemFromBox('${box.id}', '${item.id}')" class="text-red-500 hover:text-red-400 p-1"><i class="fa-solid fa-trash-can"></i></button></div>`;
+                list.appendChild(li);
+            });
+        }
+
+        function updateItemQty(boxId, itemId, change) {
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            const item = box.items.find(i => i.id === itemId);
+            if (item) {
+                item.count = Math.max(1, item.count + change);
+                saveDatabase();
+                renderItemsModalList();
+                updateStats();
+                renderBoxesDashboard();
+            }
+        }
+
+        function removeItemFromBox(boxId, itemId) {
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            box.items = box.items.filter(i => i.id !== itemId);
+            saveDatabase();
+            renderItemsModalList();
+            updateStats();
+            renderBoxesDashboard();
+        }
+
+        function quickPackManual() {
+            const input = document.getElementById('quick-add-item-input');
+            const label = input.value.trim();
+            if (!label) return;
+            const box = db.boxes.find(b => b.id === activeModalBoxId);
+            if (!box) return;
+            const existingItem = box.items.find(i => i.label.toLowerCase() === label.toLowerCase());
+            if (existingItem) {
+                existingItem.count += 1;
+            } else {
+                const newItemObj = {
+                    id: `item_${Date.now()}`,
+                    label: label,
+                    desc: '',
+                    count: 1
+                };
+                box.items.push(newItemObj);
+                pushItemToCloud(box.id, newItemObj);
+            }
+            saveDatabase();
+            input.value = '';
+            renderItemsModalList();
+            renderApp();
+        }
+
+        async function startCamera() {
+            const video = document.getElementById('viewfinder');
+            stopCamera();
+            const constraints = {
+                video: { facingMode: currentFacingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+            };
+            try {
+                activeCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = activeCameraStream;
+            } catch(e) {
+                console.error("Camera access failed", e);
+            }
+        }
+
+        function stopCamera() {
+            if (activeCameraStream) {
+                activeCameraStream.getTracks().forEach(track => track.stop());
+                activeCameraStream = null;
+            }
+            const video = document.getElementById('viewfinder');
+            if (video) video.srcObject = null;
+        }
+
+        function switchCamera() {
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            startCamera();
+        }
+
+        async function captureAndDetect() {
+            const video = document.getElementById('viewfinder');
+            const canvas = document.getElementById('snapshot-canvas');
+            const context = canvas.getContext('2d');
+            const overlay = document.getElementById('camera-overlay');
+            if (!video.srcObject) {
+                simulateAIDetection();
+                return;
+            }
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            overlay.innerHTML = '<div class="absolute inset-0 flex items-center justify-center bg-black/40"><i class="fa-solid fa-circle-notch text-4xl text-cyber-primary animate-spin"></i></div>';
+            setTimeout(async () => {
+                if (cocoModel && isAiLoaded) {
+                    try {
+                        const predictions = await cocoModel.detect(canvas);
+                        overlay.innerHTML = '';
+                        processPredictions(predictions);
+                    } catch(err) {
+                        console.error("Inference issue", err);
+                        overlay.innerHTML = '';
+                        simulateAIDetection();
+                    }
+                } else {
+                    overlay.innerHTML = '';
+                    simulateAIDetection();
+                }
+            }, 100);
+        }
+
+        function processPredictions(predictions) {
+            const dashboard = document.getElementById('detection-dashboard');
+            const labelInput = document.getElementById('detected-item-label');
+            const confidenceVal = document.getElementById('detected-item-confidence');
+            dashboard.classList.remove('hidden');
+            if (predictions && predictions.length > 0) {
+                const bestMatch = predictions[0];
+                labelInput.value = capitalizeFirstLetter(bestMatch.class);
+                confidenceVal.innerText = `${Math.round(bestMatch.score * 100)}%`;
+                drawBoundingBoxes(predictions);
+            } else {
+                labelInput.value = '';
+                confidenceVal.innerText = '0%';
+                labelInput.placeholder = 'Manual entry requested...';
+            }
+            document.getElementById('detected-item-desc').focus();
+        }
+
+        function drawBoundingBoxes(predictions) {
+            const overlay = document.getElementById('camera-overlay');
+            overlay.innerHTML = '';
+            predictions.forEach(p => {
+                const box = document.createElement('div');
+                box.className = 'absolute border-2 border-cyber-secondary pointer-events-none rounded';
+                const left = p.bbox[0];
+                const top = p.bbox[1];
+                const width = p.bbox[2];
+                const height = p.bbox[3];
+                box.style.left = `calc(${left}px * (100% / 640))`;
+                box.style.top = `calc(${top}px * (100% / 480))`;
+                box.style.width = `calc(${width}px * (100% / 640))`;
+                box.style.height = `calc(${height}px * (100% / 480))`;
+                overlay.appendChild(box);
+            });
+        }
+
+        function simulateAIDetection() {
+            const fallbacks = [
+                { class: 'Coffee Mug', confidence: '94%' },
+                { class: 'Running Shoe', confidence: '88%' },
+                { class: 'Novel Book', confidence: '92%' },
+                { class: 'Glass Water Bottle', confidence: '97%' },
+                { class: 'Desk Lamp', confidence: '81%' }
+            ];
+            const item = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+            const dashboard = document.getElementById('detection-dashboard');
+            dashboard.classList.remove('hidden');
+            document.getElementById('detected-item-label').value = item.class;
+            document.getElementById('detected-item-confidence').innerText = item.confidence;
+            document.getElementById('detected-item-desc').focus();
+        }
+
+        function packDetectedItem() {
+            const labelInput = document.getElementById('detected-item-label');
+            const descInput = document.getElementById('detected-item-desc');
+            const label = labelInput.value.trim();
+            const desc = descInput.value.trim();
+            const destBoxSelect = document.getElementById('pack-box-select');
+            const destBoxId = destBoxSelect.value;
+            if (!label) {
+                alert("What is the item?");
+                return;
+            }
+            if (!destBoxId) {
+                alert("Which box?");
+                return;
+            }
+            const box = db.boxes.find(b => b.id === destBoxId);
+            if (box) {
+                const existingItem = box.items.find(i => i.label.toLowerCase() === label.toLowerCase());
+                let finalItem = null;
+                if (existingItem) {
+                    existingItem.count += 1;
+                    if (desc) existingItem.desc = desc;
+                    finalItem = existingItem;
+                } else {
+                    finalItem = { id: `item_${Date.now()}`, label: label, desc: desc, count: 1 };
+                    box.items.push(finalItem);
+                }
+                saveDatabase();
+                pushItemToCloud(box.id, finalItem);
+                labelInput.value = '';
+                descInput.value = '';
+                document.getElementById('camera-overlay').innerHTML = '';
+                document.getElementById('detection-dashboard').classList.add('hidden');
+                showToast(`Packed "${label}" into ${box.id}!`);
+                renderApp();
+            }
+        }
+
+        function discardDetection() {
+            document.getElementById('detected-item-label').value = '';
+            document.getElementById('detected-item-desc').value = '';
+            document.getElementById('camera-overlay').innerHTML = '';
+            document.getElementById('detection-dashboard').classList.add('hidden');
+        }
+
+        function startScanner() {
+            if (scannerInst) stopScanner();
+            scannerInst = new Html5Qrcode("scanner-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            scannerInst.start({ facingMode: "environment" }, config, onQrScanSuccess, onQrScanFailure)
+                .catch(err => console.error("Scanner error", err));
+        }
+
+        function stopScanner() {
+            if (scannerInst) {
+                scannerInst.stop().then(() => { scannerInst = null; }).catch(err => console.error("Scanner halt failure", err));
+            }
+        }
+
+        // SCAN SUCCESS HANDLER: Natively supports both BOX CODES and SYSTEM CONFIG DECODING!
+        function onQrScanSuccess(decodedText) {
+            console.log(`Scan matched text: ${decodedText}`);
+            
+            // Check if scanned QR is a CONFIG Setup QR code!
+            if (decodedText.startsWith('{') && decodedText.includes('"type":"moveconfig"')) {
+                try {
+                    const parsedConfig = JSON.parse(decodedText);
+                    if (parsedConfig.url && parsedConfig.token) {
+                        apiServerUrl = parsedConfig.url;
+                        apiServerToken = parsedConfig.token;
+                        
+                        localStorage.setItem('p_and_t_api_url_v4', parsedConfig.url);
+                        localStorage.setItem('p_and_t_api_token_v4', parsedConfig.token);
+                        
+                        document.getElementById('settings-api-url').value = parsedConfig.url;
+                        document.getElementById('settings-api-token').value = parsedConfig.token;
+                        
+                        updateCloudStatusLabels();
+                        logSyncEvent("CONFIGURATION SCANNED! Successfully paired with Google Sheet API via Config QR code!");
+                        showToast("Setup Synced Instantly!");
+                        
+                        syncDataFromSheet();
+                        stopScanner();
+                        switchTab('dashboard');
+                        return;
+                    }
+                } catch(e) {
+                    console.error("Config QR parsing failure", e);
+                }
+            }
+
+            let boxId = decodedText;
+            if (decodedText.startsWith('moveapp:')) boxId = decodedText.split(':')[1];
+            showScannedBox(boxId);
+        }
+
+        function onQrScanFailure() {}
+
+        function showScannedBox(boxId) {
+            const box = db.boxes.find(b => b.id.toUpperCase() === boxId.toUpperCase());
+            const resultPanel = document.getElementById('scanned-box-result');
+            if (!box) {
+                alert(`Box "${boxId}" not found in local index.`);
+                return;
+            }
+            document.getElementById('scanned-box-title').innerText = box.name;
+            document.getElementById('scanned-box-id').innerText = box.room;
+            document.getElementById('scanned-box-badge').innerText = box.id;
+            const list = document.getElementById('scanned-box-items-list');
+            list.innerHTML = '';
+            if (box.items.length === 0) {
+                list.innerHTML = '<li class="text-xs text-cyber-muted font-mono text-center py-2">Empty Box.</li>';
+            } else {
+                box.items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'py-2 flex justify-between items-center text-xs border-b border-cyber-muted/10';
+                    li.innerHTML = `<div><span class="font-bold text-white uppercase">${item.label}</span>${item.desc ? `<p class="text-[10px] text-cyber-muted font-mono">${item.desc}</p>` : ''}</div><span class="font-bold text-cyber-secondary font-mono">${item.count} qty</span>`;
+                    list.appendChild(li);
+                });
+            }
+            resultPanel.classList.remove('hidden');
+            stopScanner();
+        }
+
+        function closeScannedResult() {
+            document.getElementById('scanned-box-result').classList.add('hidden');
+            startScanner();
+        }
+
+        function quickPackForScanned() {
+            const boxId = document.getElementById('scanned-box-badge').innerText;
+            if (boxId) {
+                selectedBoxIdForPack = boxId;
+                document.getElementById('scanned-box-result').classList.add('hidden');
+                switchTab('pack');
+            }
+        }
+
+        function printBoxLabelFromScanner() {
+            const boxId = document.getElementById('scanned-box-badge').innerText;
+            if (boxId) {
+                db.boxes.forEach(b => b.printQueue = false);
+                const box = db.boxes.find(b => b.id === boxId);
+                if (box) box.printQueue = true;
+                saveDatabase();
+                switchTab('print');
+                window.print();
+            }
+        }
+
+        function renderPrintQueueGrid() {
+            const grid = document.getElementById('print-queue-grid');
+            grid.innerHTML = '';
+            if (db.boxes.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-xs font-mono text-center text-cyber-muted py-8 font-mono">Create boxes first.</div>';
+                return;
+            }
+            db.boxes.forEach(box => {
+                const totalItemQty = box.items.reduce((sum, item) => sum + item.count, 0);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bg-cyber-panel border border-cyber-accent/20 rounded-lg p-3 flex justify-between items-center hover:border-cyber-accent/50 transition';
+                wrapper.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="chk-print-${box.id}" ${box.printQueue ? 'checked' : ''} onchange="toggleBoxPrintQueue('${box.id}')" class="w-4 h-4 rounded text-cyber-accent focus:ring-cyber-accent bg-cyber-bg border-cyber-accent/40">
+                        <div>
+                            <span class="px-1.5 py-0.5 bg-cyber-accent/10 border border-cyber-accent/30 rounded text-cyber-accent font-mono text-[9px] font-bold tracking-widest">${box.id}</span>
+                            <h4 class="text-sm font-bold text-white uppercase truncate max-w-[160px] mt-1.5">${box.name}</h4>
+                            <span class="text-[10px] text-cyber-muted block font-mono">${box.items.length} classes / ${totalItemQty} total</span>
+                        </div>
+                    </div>
+                    <div id="mini-qr-${box.id}" class="w-12 h-12 bg-white rounded p-1 flex items-center justify-center"></div>
+                `;
+                grid.appendChild(wrapper);
+                setTimeout(() => {
+                    const qr = qrcode(4, 'L');
+                    qr.addData(`moveapp:${box.id}`);
+                    qr.make();
+                    const targetEl = document.getElementById(`mini-qr-${box.id}`);
+                    if (targetEl) targetEl.innerHTML = qr.createImgTag(3, 1);
+                }, 50);
+            });
+        }
+
+        function selectAllForPrint() {
+            const anyUnchecked = db.boxes.some(b => !b.printQueue);
+            db.boxes.forEach(b => b.printQueue = anyUnchecked);
+            saveDatabase();
+            renderApp();
+        }
+
+        function renderPrintSheetLayout() {
+            const container = document.getElementById('print-sheet');
+            container.innerHTML = '';
+            const queuedBoxes = db.boxes.filter(b => b.printQueue);
+            if (queuedBoxes.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-12 font-mono uppercase text-xs">Print queue empty.</p>';
+                return;
+            }
+            queuedBoxes.forEach(box => {
+                const totalItemQty = box.items.reduce((sum, item) => sum + item.count, 0);
+                let safetySymbol = '';
+                if (box.handlingCode && handlingMappings[box.handlingCode]) {
+                    const match = handlingMappings[box.handlingCode];
+                    safetySymbol = `<div style="font-size: 28px; border: 2px solid black; padding: 4px 10px; border-radius: 6px; font-weight: bold; margin-bottom: 10px;">${match.printIcon} ${match.label}</div>`;
+                }
+                container.innerHTML += `
+                    <div class="print-card">
+                        <div style="font-size: 32px; font-weight: 900; letter-spacing: 2px; border: 4px solid black; padding: 5px 20px; border-radius: 8px; font-family: monospace; background-color: black; color: white; margin-bottom: 15px;">${box.id}</div>
+                        ${safetySymbol}
+                        <div style="font-size: 20px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; text-align: center;">${box.name}</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 15px;">DESTINATION: ${box.room.toUpperCase()}</div>
+                        <div id="full-qr-${box.id}" class="print-qrcode"></div>
+                        <div style="width: 100%; border-top: 2px dashed black; margin-top: 15px; padding-top: 10px; text-align: left; font-size: 11px;">
+                            <span style="font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px;">Box Contents List (${totalItemQty} items total):</span>
+                            <div style="column-count: 2; column-gap: 15px;">
+                                ${box.items.map(i => `• ${i.label.toUpperCase()} (x${i.count})`).join('<br>')}
+                            </div>
+                        </div>
+                    </div>
+                ;`
+                setTimeout(() => {
+                    const qr = qrcode(5, 'M');
+                    qr.addData(`moveapp:${box.id}`);
+                    qr.make();
+                    const targetDiv = document.getElementById(`full-qr-${box.id}`);
+                    if (targetDiv) {
+                        targetDiv.innerHTML = qr.createImgTag(5, 5);
+                    }
+                }, 50);
+            });
+        }
+
+
+        function showToast(message) {
+            const box = document.getElementById("toastNotificationBox");
+            if (!box) return;
+            const alertCard = document.createElement("div");
+            alertCard.className = "bg-cyber-panel border border-cyber-secondary text-white p-3 rounded shadow-neon-cyan max-w-xs text-xs font-mono flex items-center space-x-2 pointer-events-auto transition duration-300 transform translate-x-12 opacity-0";
+            alertCard.innerHTML = `<i class="fa-solid fa-circle-nodes text-cyber-secondary animate-pulse"></i> <span>${message}</span>`;
+            box.appendChild(alertCard);
+            
+            setTimeout(() => {
+                alertCard.classList.remove("translate-x-12", "opacity-0");
+            }, 50);
+
+            setTimeout(() => {
+                alertCard.classList.add("opacity-0", "translate-y-2");
+                setTimeout(() => alertCard.remove(), 500);
+            }, 3500);
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+    </script>
+</body>
+</html>
