@@ -6,8 +6,8 @@
  * and syncing without requiring manual OTP passwords or multi-step logins.
  */
 
-// CHANGE THIS PASSCODE TO YOUR CHOSEN SHARED KEY
-var API_SECRET = "pnix_secure_moving_2026_token";
+// Fetches the secret token dynamically from your Google Script Environment Variables
+var API_SECRET = PropertiesService.getScriptProperties().getProperty("API_SECRET");
 
 function doGet(e) {
   var token = e.parameter.token;
