@@ -6,8 +6,8 @@
  * and syncing without requiring manual OTP passwords or multi-step logins.
  */
 
-// Fetches the secret token dynamically from your Google Script Environment Variables
-var API_SECRET = PropertiesService.getScriptProperties().getProperty("API_SECRET");
+// CHANGE THIS PASSCODE TO YOUR CHOSEN SHARED KEY
+var API_SECRET = "pnix_secure_moving_2026_token";
 
 function doGet(e) {
   var token = e.parameter.token;
@@ -212,6 +212,10 @@ function getRowsAsJson(sheet) {
   var jsonArray = [];
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
+    // Ignore empty/ghost rows where the first column identifier is blank
+    if (!row[0] || String(row[0]).trim() === "" || String(row[0]).toUpperCase() === "UNDEFINED") {
+      continue;
+    }
     var obj = {};
     for (var j = 0; j < headers.length; j++) {
       obj[headers[j]] = row[j];
@@ -220,4 +224,3 @@ function getRowsAsJson(sheet) {
   }
   return jsonArray;
 }
-
