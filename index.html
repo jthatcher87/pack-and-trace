@@ -78,8 +78,12 @@
             border-radius: 9999px;
         }
 
-        /* Print Styles */
+        /* Print Styles - Optimized for 4 Labels Per Page (2x2 Grid) */
         @media print {
+            @page {
+                size: letter;
+                margin: 0.4in;
+            }
             body {
                 background: white !important;
                 color: black !important;
@@ -94,25 +98,35 @@
             .print-sheet {
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important;
-                gap: 20px !important;
-                padding: 10px !important;
+                gap: 15px !important;
+                padding: 0 !important;
                 background: white !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
             .print-card {
                 border: 3px solid black !important;
                 border-radius: 12px !important;
-                padding: 20px !important;
-                page-break-inside: avoid !important;
+                padding: 15px !important;
+                box-sizing: border-box !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
+                justify-content: space-between !important;
                 background: white !important;
                 color: black !important;
+                height: 4.8in !important; /* Ensures 2 rows fit comfortably within 11-inch page height */
+                page-break-inside: avoid !important;
+                position: relative !important;
+            }
+            /* Force page break after every 4th label to perfectly maintain a 2x2 grid per page */
+            .print-card:nth-child(4n) {
+                page-break-after: always !important;
             }
             .print-qrcode img {
-                width: 160px !important;
-                height: 160px !important;
-                margin: 10px 0 !important;
+                width: 125px !important;
+                height: 125px !important;
+                margin: 5px 0 !important;
             }
         }
     </style>
@@ -544,12 +558,15 @@
                 </div>
                 <div>
                     <label class="block text-xs uppercase text-cyber-muted tracking-wider mb-1 font-mono">Handling Care (Multi-Select)</label>
-                    <div id="add-box-handling-pills" class="flex flex-wrap gap-2 mt-1">
-                        <button type="button" onclick="toggleAddPill('F')" id="add-pill-F" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-red-500/30 text-red-500 bg-transparent hover:bg-red-500/10 transition uppercase font-mono">F | Fragile</button>
-                        <button type="button" onclick="toggleAddPill('U')" id="add-pill-U" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-emerald-500/30 text-emerald-500 bg-transparent hover:bg-emerald-500/10 transition uppercase font-mono">U | Upright</button>
-                        <button type="button" onclick="toggleAddPill('H')" id="add-pill-H" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-amber-500/30 text-amber-500 bg-transparent hover:bg-amber-500/10 transition uppercase font-mono">H | Heavy</button>
-                        <button type="button" onclick="toggleAddPill('D')" id="add-pill-D" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-purple-500/30 text-purple-500 bg-transparent hover:bg-purple-500/10 transition uppercase font-mono">D | Do Not Turn Over</button>
-                        <button type="button" onclick="toggleAddPill('S')" id="add-pill-S" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-cyan-500/30 text-cyan-500 bg-transparent hover:bg-cyan-500/10 transition uppercase font-mono">S | Special Notes</button>
+                    <div id="add-box-handling-pills" class="flex flex-wrap gap-1.5 mt-1">
+                        <button type="button" onclick="toggleAddPill('C')" id="add-pill-C" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-yellow-500/30 text-yellow-400 bg-transparent hover:bg-yellow-500/10 transition uppercase font-mono">C | Chemicals</button>
+                        <button type="button" onclick="toggleAddPill('F')" id="add-pill-F" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-red-500/30 text-red-500 bg-transparent hover:bg-red-500/10 transition uppercase font-mono">F | Fragile</button>
+                        <button type="button" onclick="toggleAddPill('H')" id="add-pill-H" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-amber-500/30 text-amber-500 bg-transparent hover:bg-amber-500/10 transition uppercase font-mono">H | Heavy</button>
+                        <button type="button" onclick="toggleAddPill('I')" id="add-pill-I" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-orange-500/30 text-orange-400 bg-transparent hover:bg-orange-500/10 transition uppercase font-mono">I | Ignitable</button>
+                        <button type="button" onclick="toggleAddPill('L')" id="add-pill-L" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-blue-500/30 text-blue-400 bg-transparent hover:bg-blue-500/10 transition uppercase font-mono">L | Liquid</button>
+                        <button type="button" onclick="toggleAddPill('P')" id="add-pill-P" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-green-500/30 text-green-500 bg-transparent hover:bg-green-500/10 transition uppercase font-mono">P | Perishable</button>
+                        <button type="button" onclick="toggleAddPill('S')" id="add-pill-S" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-cyan-500/30 text-cyan-500 bg-transparent hover:bg-cyan-500/10 transition uppercase font-mono">S | Special Notes</button>
+                        <button type="button" onclick="toggleAddPill('U')" id="add-pill-U" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-emerald-500/30 text-emerald-500 bg-transparent hover:bg-emerald-500/10 transition uppercase font-mono">U | Upright</button>
                     </div>
                 </div>
                 <div>
@@ -598,12 +615,15 @@
                 </div>
                 <div>
                     <label class="block text-xs uppercase text-cyber-muted tracking-wider mb-1 font-mono">Handling Care (Multi-Select)</label>
-                    <div id="edit-box-handling-pills" class="flex flex-wrap gap-2 mt-1">
-                        <button type="button" onclick="toggleEditPill('F')" id="edit-pill-F" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-red-500/30 text-red-500 bg-transparent hover:bg-red-500/10 transition uppercase font-mono">F | Fragile</button>
-                        <button type="button" onclick="toggleEditPill('U')" id="edit-pill-U" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-emerald-500/30 text-emerald-500 bg-transparent hover:bg-emerald-500/10 transition uppercase font-mono">U | Upright</button>
-                        <button type="button" onclick="toggleEditPill('H')" id="edit-pill-H" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-amber-500/30 text-amber-500 bg-transparent hover:bg-amber-500/10 transition uppercase font-mono">H | Heavy</button>
-                        <button type="button" onclick="toggleEditPill('D')" id="edit-pill-D" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-purple-500/30 text-purple-500 bg-transparent hover:bg-purple-500/10 transition uppercase font-mono">D | Do Not Turn Over</button>
-                        <button type="button" onclick="toggleEditPill('S')" id="edit-pill-S" class="px-2.5 py-1 rounded-xl text-[10px] font-bold border border-cyan-500/30 text-cyan-500 bg-transparent hover:bg-cyan-500/10 transition uppercase font-mono">S | Special Notes</button>
+                    <div id="edit-box-handling-pills" class="flex flex-wrap gap-1.5 mt-1">
+                        <button type="button" onclick="toggleEditPill('C')" id="edit-pill-C" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-yellow-500/30 text-yellow-400 bg-transparent hover:bg-yellow-500/10 transition uppercase font-mono">C | Chemicals</button>
+                        <button type="button" onclick="toggleEditPill('F')" id="edit-pill-F" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-red-500/30 text-red-500 bg-transparent hover:bg-red-500/10 transition uppercase font-mono">F | Fragile</button>
+                        <button type="button" onclick="toggleEditPill('H')" id="edit-pill-H" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-amber-500/30 text-amber-500 bg-transparent hover:bg-amber-500/10 transition uppercase font-mono">H | Heavy</button>
+                        <button type="button" onclick="toggleEditPill('I')" id="edit-pill-I" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-orange-500/30 text-orange-400 bg-transparent hover:bg-orange-500/10 transition uppercase font-mono">I | Ignitable</button>
+                        <button type="button" onclick="toggleEditPill('L')" id="edit-pill-L" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-blue-500/30 text-blue-400 bg-transparent hover:bg-blue-500/10 transition uppercase font-mono">L | Liquid</button>
+                        <button type="button" onclick="toggleEditPill('P')" id="edit-pill-P" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-green-500/30 text-green-500 bg-transparent hover:bg-green-500/10 transition uppercase font-mono">P | Perishable</button>
+                        <button type="button" onclick="toggleEditPill('S')" id="edit-pill-S" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-cyan-500/30 text-cyan-500 bg-transparent hover:bg-cyan-500/10 transition uppercase font-mono">S | Special Notes</button>
+                        <button type="button" onclick="toggleEditPill('U')" id="edit-pill-U" class="px-2.5 py-1 rounded-xl text-[9px] font-bold border border-emerald-500/30 text-emerald-500 bg-transparent hover:bg-emerald-500/10 transition uppercase font-mono">U | Upright</button>
                     </div>
                 </div>
                 <div>
@@ -660,11 +680,14 @@
                 </div>
             </div>
 
-            <div class="flex justify-between items-center border-t border-cyber-accent/20 pt-4">
-                <button id="items-modal-print-btn" class="px-3 py-1.5 bg-cyber-secondary/10 hover:bg-cyber-secondary hover:text-cyber-bg text-cyber-secondary rounded border border-cyber-secondary text-xs uppercase font-bold tracking-wider transition">
-                    <i class="fa-solid fa-print"></i> Generate Label
+            <div class="flex justify-between items-center border-t border-cyber-accent/20 pt-4 gap-2">
+                <button onclick="openEditBoxModal(activeModalBoxId)" class="px-3 py-1.5 bg-cyber-accent/20 hover:bg-cyber-accent text-white rounded-xl text-xs uppercase font-bold tracking-wider transition font-mono">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit Box
                 </button>
-                <button onclick="closeViewItemsModal()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded text-xs uppercase tracking-wider">
+                <button id="items-modal-print-btn" class="px-3 py-1.5 bg-cyber-secondary/10 hover:bg-cyber-secondary hover:text-cyber-bg text-cyber-secondary rounded-xl border border-cyber-secondary text-xs uppercase font-bold tracking-wider transition font-mono">
+                    <i class="fa-solid fa-print"></i> Label
+                </button>
+                <button onclick="closeViewItemsModal()" class="px-3 py-1.5 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded-xl text-xs uppercase tracking-wider font-mono">
                     Close
                 </button>
             </div>
@@ -996,7 +1019,7 @@
 
             try {
                 // Generate secure setup QR code
-                const qr = qrcode(12, 'L'); // Type 12 supports large string lengths
+                const qr = qrcode(0, 'M'); // Type 12 supports large string lengths
                 qr.addData(payloadStr);
                 qr.make();
                 
@@ -1193,9 +1216,14 @@
                                         boxItemsHtml += `
                                             <li class="flex justify-between items-center text-[10px] font-mono border-b border-white/5 py-1">
                                                 <span class="text-gray-300 font-bold uppercase">${item.label} (x${item.count})</span>
-                                                <button onclick="deleteItemFromNestedTree('${box.id}', '${item.id}')" class="text-red-400 hover:text-red-500 p-0.5" title="Delete Packed Item">
-                                                    <i class="fa-solid fa-xmark"></i>
-                                                </button>
+                                                <div class="flex space-x-1.5">
+                                                    <button onclick="openMoveItemModal('${box.id}', '${item.id}')" class="text-cyber-accent hover:text-white p-0.5" title="Move Item">
+                                                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                                                    </button>
+                                                    <button onclick="deleteItemFromNestedTree('${box.id}', '${item.id}')" class="text-red-400 hover:text-red-500 p-0.5" title="Delete Packed Item">
+                                                        <i class="fa-solid fa-xmark"></i>
+                                                    </button>
+                                                </div>
                                             </li>`;
                                     });
                                 }
@@ -1383,7 +1411,7 @@
             // Compile multi-select handling care suffix (e.g. -FUH)
             let handlingCode = "";
             if (selectedAddPills.length > 0) {
-                const sortedPills = ["F", "U", "H", "D", "S"].filter(p => selectedAddPills.indexOf(p) > -1);
+                const sortedPills = ["C", "F", "H", "I", "L", "P", "S", "U"].filter(p => selectedAddPills.indexOf(p) > -1);
                 handlingCode = "-" + sortedPills.join("");
             }
 
@@ -1461,11 +1489,14 @@
 
         // ==================== PILL MULTI-SELECT HANDLERS ====================
         const pillStyles = {
+            "C": { active: "bg-yellow-500/20 border-yellow-500 text-white shadow-neon-cyan", inactive: "border-yellow-500/30 text-yellow-400 bg-transparent" },
             "F": { active: "bg-red-500/20 border-red-500 text-white shadow-neon-pink", inactive: "border-red-500/30 text-red-500 bg-transparent" },
-            "U": { active: "bg-emerald-500/20 border-emerald-500 text-white shadow-neon-cyan", inactive: "border-emerald-500/30 text-emerald-500 bg-transparent" },
             "H": { active: "bg-amber-500/20 border-amber-500 text-white shadow-neon-orange", inactive: "border-amber-500/30 text-amber-500 bg-transparent" },
-            "D": { active: "bg-purple-500/20 border-purple-500 text-white shadow-neon-purple", inactive: "border-purple-500/30 text-purple-500 bg-transparent" },
-            "S": { active: "bg-cyan-500/20 border-cyan-500 text-white shadow-neon-cyan", inactive: "border-cyan-500/30 text-cyan-500 bg-transparent" }
+            "I": { active: "bg-orange-500/20 border-orange-500 text-white shadow-neon-pink", inactive: "border-orange-500/30 text-orange-400 bg-transparent" },
+            "L": { active: "bg-blue-500/20 border-blue-500 text-white shadow-neon-cyan", inactive: "border-blue-500/30 text-blue-400 bg-transparent" },
+            "P": { active: "bg-green-500/20 border-green-500 text-white shadow-neon-cyan", inactive: "border-green-500/30 text-green-500 bg-transparent" },
+            "S": { active: "bg-cyan-500/20 border-cyan-500 text-white shadow-neon-cyan", inactive: "border-cyan-500/30 text-cyan-500 bg-transparent" },
+            "U": { active: "bg-emerald-500/20 border-emerald-500 text-white shadow-neon-cyan", inactive: "border-emerald-500/30 text-emerald-500 bg-transparent" }
         };
 
         function toggleAddPill(code) {
@@ -1499,6 +1530,153 @@
                 // Clear out prior styles and apply current state
                 el.className = `px-2.5 py-1 rounded-xl text-[10px] font-bold border transition uppercase font-mono ${isActive ? styles.active : styles.inactive}`;
             });
+        }
+
+
+        // ==================== THEMED DELETION CONFIRMATION SYSTEM ====================
+        let activeConfirmCallback = null;
+
+        function showConfirmModal(message, onConfirmCallback) {
+            document.getElementById('confirm-modal-message').innerText = message;
+            activeConfirmCallback = onConfirmCallback;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            activeConfirmCallback = null;
+        }
+
+        document.getElementById('confirm-modal-btn').onclick = function() {
+            if (activeConfirmCallback) {
+                activeConfirmCallback();
+            }
+            closeConfirmModal();
+        };
+
+        // Redefine deleteBoxFromModal with themed confirmation modal
+        function deleteBoxFromModal() {
+            const id = document.getElementById('edit-box-id-hidden').value;
+            if (!id) return;
+            
+            showConfirmModal(`CRITICAL WARNING:\nAre you sure you want to permanently delete Box "${id}" and all of its packed items? This will wipe its row from your Google Sheet.`, () => {
+                db.boxes = db.boxes.filter(b => b.id !== id);
+                saveDatabase();
+                closeEditBoxModal();
+                renderApp();
+                deleteBoxOnCloud(id);
+                showToast(`Box ${id} deleted.`);
+            });
+        }
+
+        // Redefine deleteBoxFromNestedTree with themed confirmation modal
+        function deleteBoxFromNestedTree(boxId) {
+            showConfirmModal(`CRITICAL WARNING:\nAre you sure you want to permanently delete Box "${boxId}" and all of its packed items? This will wipe its row from your Google Sheet.`, () => {
+                db.boxes = db.boxes.filter(b => b.id !== boxId);
+                saveDatabase();
+                renderApp();
+                deleteBoxOnCloud(boxId);
+                showToast(`Box ${boxId} deleted.`);
+            });
+        }
+
+        // Redefine deleteItemFromNestedTree with themed confirmation modal
+        function deleteItemFromNestedTree(boxId, itemId) {
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            const item = box.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            showConfirmModal(`Are you sure you want to delete "${item.label}" from Box ${boxId}? This will clean it from your Google Sheet.`, () => {
+                box.items = box.items.filter(i => i.id !== itemId);
+                saveDatabase();
+                renderApp();
+                deleteItemOnCloud(boxId, item.label);
+                showToast(`Item "${item.label}" deleted.`);
+            });
+        }
+
+
+        // ==================== ITEM TRANSFER / MOVE SYSTEM ====================
+        let activeMoveItemId = null;
+        let activeMoveSourceBoxId = null;
+
+        function openMoveItemModal(sourceBoxId, itemId) {
+            activeMoveSourceBoxId = sourceBoxId;
+            activeMoveItemId = itemId;
+
+            const box = db.boxes.find(b => b.id === sourceBoxId);
+            if (!box) return;
+            const item = box.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            document.getElementById('move-item-id-hidden').value = itemId;
+            document.getElementById('move-item-source-box-hidden').value = sourceBoxId;
+            document.getElementById('move-item-label-preview').innerText = item.label;
+
+            // Populate destination box selections dropdown
+            const select = document.getElementById('move-item-dest-box-select');
+            select.innerHTML = '';
+            
+            // Filter out current source box from destination list
+            const destBoxes = db.boxes.filter(b => b.id !== sourceBoxId);
+            if (destBoxes.length === 0) {
+                select.innerHTML = '<option value="">(No other boxes exist. Create one first!)</option>';
+            } else {
+                destBoxes.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.text = `${b.id} — ${b.name}`;
+                    select.appendChild(opt);
+                });
+            }
+
+            document.getElementById('move-item-modal').classList.remove('hidden');
+        }
+
+        function closeMoveItemModal() {
+            document.getElementById('move-item-modal').classList.add('hidden');
+            activeMoveItemId = null;
+            activeMoveSourceBoxId = null;
+        }
+
+        async function executeItemTransfer() {
+            const destBoxId = document.getElementById('move-item-dest-box-select').value;
+            if (!destBoxId) {
+                alert("Please select a destination box!");
+                return;
+            }
+
+            const srcBox = db.boxes.find(b => b.id === activeMoveSourceBoxId);
+            const destBox = db.boxes.find(b => b.id === destBoxId);
+            if (!srcBox || !destBox) return;
+
+            const item = srcBox.items.find(i => i.id === activeMoveItemId);
+            if (!item) return;
+
+            // 1. Delete item from source box locally
+            srcBox.items = srcBox.items.filter(i => i.id !== activeMoveItemId);
+            
+            // 2. Add or merge item into destination box locally
+            const existingDestItem = destBox.items.find(i => i.label.toLowerCase() === item.label.toLowerCase());
+            if (existingDestItem) {
+                existingDestItem.count += item.count;
+                if (item.desc) existingDestItem.desc = item.desc;
+            } else {
+                destBox.items.push(item);
+            }
+
+            saveDatabase();
+            closeMoveItemModal();
+            closeViewItemsModal();
+            renderApp();
+
+            // 3. Sync transfer to Google Sheets
+            // Delete old row, and upsert new row!
+            await deleteItemOnCloud(srcBox.id, item.label);
+            await pushItemToCloud(destBox.id, existingDestItem || item);
+
+            showToast(`Moved "${item.label}" to Box ${destBoxId}!`);
         }
 
         // ==================== BOX EDITING METADATA ====================
@@ -1536,7 +1714,7 @@
             // Compile edit suffix
             let handlingCode = "";
             if (selectedEditPills.length > 0) {
-                const sortedPills = ["F", "U", "H", "D", "S"].filter(p => selectedEditPills.indexOf(p) > -1);
+                const sortedPills = ["C", "F", "H", "I", "L", "P", "S", "U"].filter(p => selectedEditPills.indexOf(p) > -1);
                 handlingCode = "-" + sortedPills.join("");
             }
 
@@ -1859,7 +2037,23 @@
         function startScanner() {
             if (scannerInst) stopScanner();
             scannerInst = new Html5Qrcode("scanner-reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            // Dynamic qrbox function to prevent viewfinder scaling mismatch and crop errors on phones
+            const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+                let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                let qrboxSize = Math.floor(minEdge * 0.7); // Use 70% of the smallest camera viewfinder edge
+                return {
+                    width: qrboxSize,
+                    height: qrboxSize
+                };
+            };
+            
+            const config = { 
+                fps: 15, // Higher frame rate for smoother detection
+                qrbox: qrboxFunction,
+                aspectRatio: 1.0 // Ensure square ratio for camera focusing
+            };
+            
             scannerInst.start({ facingMode: "environment" }, config, onQrScanSuccess, onQrScanFailure)
                 .catch(err => console.error("Scanner error", err));
         }
