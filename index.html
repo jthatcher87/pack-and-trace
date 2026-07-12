@@ -773,7 +773,7 @@
             "BA": { name: "Bathroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "BR": { name: "Bedroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
-            "KT": { name: "Kitchen", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "KT": { name: "Kitchen", packed: true, repaired: false, cleaned: false, finished: false, note: "Double check spice cabinet storage drawers before locking." },
             "LR": { name: "Living Room", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "OF": { name: "Office", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "PR": { name: "Playroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
@@ -852,7 +852,8 @@
             document.getElementById('stat-total-boxes').innerText = db.boxes.length;
             
             const uniqueItems = db.boxes.reduce((acc, box) => {
-                box.items.forEach(i => {
+                const itemsList = box.items || [];
+                itemsList.forEach(i => {
                     const label = i.label.toLowerCase().trim();
                     acc[label] = (acc[label] || 0) + i.count;
                 });
@@ -879,7 +880,8 @@
             }
 
             db.boxes.forEach(box => {
-                const totalItemQty = box.items.reduce((sum, item) => sum + item.count, 0);
+                const itemsList = box.items || [];
+                const totalItemQty = itemsList.reduce((sum, item) => sum + item.count, 0);
                 
                 // Set custom neon glow border, gradient bar and blob colors matching handling types
                 let glowClass = 'border-slate-800/60 hover:border-cyber-secondary/40';
@@ -958,7 +960,7 @@
                             <p class="text-xs text-cyber-muted mt-1.5 font-mono line-clamp-2">${box.desc || 'No description notes provided.'}</p>
                         </div>
                         <div class="border-t border-cyber-secondary/10 mt-6 pt-3 flex justify-between items-center text-xs">
-                            <span class="font-mono text-cyber-muted">${box.items.length} classes (${totalItemQty} qty)</span>
+                            <span class="font-mono text-cyber-muted">${(box.items || []).length} classes (${totalItemQty} qty)</span>
                             <div class="flex space-x-2">
                                 <button onclick="openEditBoxModal('${box.id}')" class="px-2.5 py-1 bg-cyber-accent/15 text-cyber-accent hover:bg-cyber-accent hover:text-white rounded-xl transition uppercase tracking-wider font-bold text-[10px]" title="Edit Box Metadata">
                                     <i class="fa-solid fa-pen-to-square"></i> Edit
@@ -1110,7 +1112,7 @@
                 
                 const matchingBoxes = db.boxes.filter(b => b.roomCode === code);
                 const boxesInRoom = matchingBoxes.length;
-                const itemsInRoom = matchingBoxes.reduce((sum, b) => sum + b.items.reduce((s, i) => s + i.count, 0), 0);
+                const itemsInRoom = matchingBoxes.reduce((sum, b) => sum + (b.items || []).reduce((s, i) => s + i.count, 0), 0);
                 
                 // Construct Nested Inventory HTML if Expanded
                 let expandedInventoryHtml = '';
@@ -1130,7 +1132,7 @@
                             let boxItemsHtml = '';
                             if (isBoxExpanded) {
                                 boxItemsHtml += `<ul class="pl-4 mt-2 border-l border-cyber-secondary/20 space-y-1.5 pb-2">`;
-                                if (box.items.length === 0) {
+                                if ((box.items || []).length === 0) {
                                     boxItemsHtml += `<li class="text-[10px] text-cyber-muted italic">This box is empty.</li>`;
                                 } else {
                                     box.items.forEach(item => {
@@ -1711,7 +1713,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             try {
-                const predictions = await objectDetectorModel.detect(video);
+                const predictions = await objectDetectorModel.detect(video, 20, 0.35); // Tune: Detect up to 20 objects at a high-sensitivity 35% score threshold
                 
                 if (predictions.length > 0) {
                     predictions.forEach(p => {
