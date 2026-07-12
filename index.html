@@ -145,31 +145,29 @@
         <div class="space-y-8">
             <!-- Brand Logotype -->
             <div>
-                <h1 class="text-xl font-bold tracking-widest text-cyber-primary font-mono flex items-center">
-                    <i class="fa-solid fa-cube text-cyber-secondary mr-2 animate-spin" style="animation-duration: 4s;"></i> PNiX
-                </h1>
+                <h1 class="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.0</h1>
                 <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
             </div>
 
             <!-- Nav drawers -->
-            <nav class="flex flex-col space-y-3 font-mono text-xs uppercase tracking-wider font-semibold">
-                <button onclick="switchTab('dashboard')" id="side-btn-dashboard" class="flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent bg-cyber-primary/10 text-cyber-primary shadow-neon-pink">
-                    <i class="fa-solid fa-gauge-high"></i> <span>Dashboard</span>
+            <nav class="flex flex-col space-y-2">
+                <button onclick="switchTab('dashboard')" id="desk-nav-dashboard" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-cyber-secondary font-bold font-mono text-sm">
+                    <i class="fa-solid fa-cubes w-5"></i> <span>BOX INVENTORY</span>
                 </button>
-                <button onclick="switchTab('rooms')" id="side-btn-rooms" class="flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent text-gray-400 hover:text-white hover:bg-white/5">
-                    <i class="fa-solid fa-circle-nodes"></i> <span>Rooms Progress</span>
+                <button onclick="switchTab('pack')" id="desk-nav-pack" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-camera w-5"></i> <span>AI PACK STATION</span>
                 </button>
-                <button onclick="switchTab('pack')" id="side-btn-pack" class="flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent text-gray-400 hover:text-white hover:bg-white/5">
-                    <i class="fa-solid fa-camera"></i> <span>AI Pack Station</span>
+                <button onclick="switchTab('scan')" id="desk-nav-scan" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-qrcode w-5"></i> <span>QR INVENTORY SCAN</span>
                 </button>
-                <button onclick="switchTab('scan')" id="side-btn-scan" class="flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent text-gray-400 hover:text-white hover:bg-white/5">
-                    <i class="fa-solid fa-qrcode"></i> <span>Scan & Identify</span>
+                <button onclick="switchTab('rooms')" id="desk-nav-rooms" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-house-chimney-window w-5"></i> <span>ROOM PROGRESS</span>
                 </button>
-                <button onclick="switchTab('print')" id="side-btn-print" class="flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent text-gray-400 hover:text-white hover:bg-white/5">
-                    <i class="fa-solid fa-print"></i> <span>Print Studio</span>
+                <button onclick="switchTab('print')" id="desk-nav-print" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-print w-5"></i> <span>PRINT LABELS</span>
                 </button>
-                <button onclick="switchTab('settings')" id="side-btn-settings" class="flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent text-gray-400 hover:text-white hover:bg-white/5">
-                    <i class="fa-solid fa-cloud"></i> <span>Cloud Settings</span>
+                <button onclick="switchTab('settings')" id="desk-nav-settings" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
+                    <i class="fa-solid fa-gears w-5"></i> <span>CLOUD SETTINGS</span>
                 </button>
             </nav>
         </div>
@@ -203,15 +201,15 @@
         <section id="view-dashboard" class="space-y-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.0</h1>
+                    <h2 class="text-xl font-bold uppercase tracking-wider text-white">Your Container Inventory</h2>
                     <p class="text-xs text-cyber-muted">Create sequential room shortcodes, view packed items, and manage prints.</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="openAddBoxModal()" class="px-4 py-2 bg-cyber-accent text-white text-xs rounded-md shadow-neon-purple hover:bg-cyber-accent/80 font-bold uppercase tracking-wider">
-                        + Assemble New Box
+                    <button onclick="openAddBoxModal()" class="px-4 py-2 bg-cyber-accent text-white text-xs rounded-md shadow-neon-purple hover:bg-cyber-accent/80 font-bold uppercase tracking-wider font-mono">
+                        + ASSEMBLE CONTAINER
                     </button>
                     <button onclick="syncDataFromSheet()" class="px-4 py-2 bg-cyber-secondary text-cyber-bg text-xs rounded-md shadow-neon-cyan hover:bg-cyber-secondary/80 font-bold uppercase tracking-wider font-mono">
-                        <i class="fa-solid fa-arrows-rotate"></i> Sync Sheet
+                        <i class="fa-solid fa-arrows-rotate"></i> SYNC SHEET
                     </button>
                 </div>
             </div>
@@ -401,9 +399,9 @@
                     <p class="text-xs text-cyber-muted">Queue multiple box codes to print physical shipping labels with custom QR codes and packing logs.</p>
                 </div>
                 <div class="flex space-x-2">
-                    <button onclick="selectAllForPrint()" class="text-cyber-secondary hover:underline font-bold">Select All</button>
+                    <button onclick="selectAllForPrint()" class="text-cyber-secondary hover:underline font-bold font-mono text-xs uppercase">Select All</button>
                     <span class="text-cyber-muted">|</span>
-                    <button onclick="clearPrintQueue()" class="text-cyber-muted hover:text-cyber-primary font-bold">Clear All</button>
+                    <button onclick="clearPrintQueue()" class="text-cyber-muted hover:text-cyber-primary font-bold font-mono text-xs uppercase">Clear All</button>
                 </div>
             </div>
 
@@ -413,7 +411,7 @@
                     <h3 class="text-sm font-bold uppercase tracking-wider text-cyber-secondary font-mono">Print Configuration Rules</h3>
                     <p class="text-xs text-cyber-muted">Ensure browser background graphics are enabled during print preview. For standard sticky label paper sheets (like Avery 2-by-2 labels), select 2-column portrait layout in the web print options.</p>
                 </div>
-                <button onclick="window.print()" class="px-5 py-2.5 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs shadow-neon-cyan transition font-mono flex-shrink-0">
+                <button onclick="window.print()" class="px-5 py-2.5 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded-xl font-bold uppercase tracking-wider text-xs shadow-neon-cyan transition font-mono flex-shrink-0">
                     <i class="fa-solid fa-print"></i> Execute Print
                 </button>
             </div>
@@ -442,12 +440,12 @@
 
                     <div>
                         <label class="block text-xs text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Google Web App URL</label>
-                        <input id="settings-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-cyber-bg border border-cyber-accent/30 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyber-accent">
+                        <input id="settings-api-url" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
                     </div>
 
                     <div>
                         <label class="block text-xs text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Private Shared Access Passcode (API_SECRET)</label>
-                        <input id="settings-token" type="password" placeholder="Enter private shared API_SECRET..." class="w-full bg-cyber-bg border border-cyber-accent/30 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyber-accent">
+                        <input id="settings-api-token" type="password" placeholder="Enter matching custom API_SECRET..." class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
                     </div>
 
                     <div class="flex space-x-2 pt-2">
@@ -821,11 +819,11 @@
             }
             if (savedUrl) {
                 apiServerUrl = savedUrl;
-                document.getElementById('settings-url').value = savedUrl;
+                document.getElementById('settings-api-url').value = savedUrl;
             }
             if (savedToken) {
                 apiServerToken = savedToken;
-                document.getElementById('settings-token').value = savedToken;
+                document.getElementById('settings-api-token').value = savedToken;
             }
 
             updateCloudUIBadge();
@@ -1314,12 +1312,12 @@
             // Apply desktop nav styling active states
             const navKeys = ['dashboard', 'rooms', 'pack', 'scan', 'print', 'settings'];
             navKeys.forEach(k => {
-                const sideBtn = document.getElementById(`side-btn-${k}`);
+                const sideBtn = document.getElementById(`desk-nav-${k}`);
                 const mobBtn = document.getElementById(`mob-btn-${k}`);
                 if (sideBtn) {
                     sideBtn.className = k === tabId 
-                        ? "flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent bg-cyber-primary/10 text-cyber-primary shadow-neon-pink"
-                        : "flex items-center space-x-3 p-3 rounded-xl transition duration-200 border border-transparent text-gray-400 hover:text-white hover:bg-white/5";
+                        ? "flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-cyber-secondary font-bold font-mono text-sm"
+                        : "flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm";
                 }
                 if (mobBtn) {
                     mobBtn.className = k === tabId
@@ -1359,8 +1357,8 @@
 
         // ==================== CLOUD INTEGRATION & HANDSHAKES ====================
         function saveCloudSettings() {
-            const urlInput = document.getElementById('settings-url').value.trim();
-            const tokenInput = document.getElementById('settings-token').value.trim();
+            const urlInput = document.getElementById('settings-api-url').value.trim();
+            const tokenInput = document.getElementById('settings-api-token').value.trim();
             
             if (!urlInput || !tokenInput) {
                 alert("Please provide both Apps Script Endpoint and Access Token.");
@@ -1382,8 +1380,8 @@
             localStorage.removeItem('pnix_packtrack_api_token_v4');
             apiServerUrl = '';
             apiServerToken = '';
-            document.getElementById('settings-url').value = '';
-            document.getElementById('settings-token').value = '';
+            document.getElementById('settings-api-url').value = '';
+            document.getElementById('settings-api-token').value = '';
             
             updateCloudUIBadge();
             logSyncEvent("Cloud Sync terminated. Device in sandbox LocalStorage fallback mode.");
@@ -1505,7 +1503,7 @@
                         
                         // 4. Push offline additions to server
                         if (localPushesQueued.length > 0) {
-                            logSyncEvent(`Uploading ${localPushesQueued.length} offline boxes to sheet...`);
+                            logSyncEvent("Uploading offline boxes to sheet...");
                             for (const localBox of localPushesQueued) {
                                 await pushBoxToCloud(localBox);
                                 for (const item of localBox.items) {
@@ -1780,10 +1778,6 @@
                     scannerInst = null;
                     if (overlay) overlay.classList.remove('hidden');
                 }).catch(err => console.error("Failed to stop scanner stream:", err));
-            }
-        }
-
-        //(err => console.error("Failed to stop scanner stream:", err));
             }
         }
 
