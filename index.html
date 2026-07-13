@@ -1,46 +1,48 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PNiX | Pack & Track</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <!-- Html5Qrcode Scanner Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <!-- TensorFlow.js and COCO-SSD for client-side local object recognition -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+    
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
                         cyber: {
                             bg: '#0a0a0c',
-                            panel: '#121217',
-                            primary: '#ff007f' // Neon Pink
+                            primary: '#ff007f', // Neon Pink
                             secondary: '#00f0ff', // Neon Cyan
                             accent: '#ab00ff', // Neon Purple
-                            muted: '#6b7280'
+                            muted: '#6b7280', // Slate Gray
+                            panel: '#121217'
                         }
                     },
                     boxShadow: {
-                        'neon-pink': '0 0 10px #ff007f, 0 0 20px rgba(255, 0, 127, 0.3)',
-                        'neon-cyan': '0 0 10px #00f0ff, 0 0 20px rgba(0, 240, 255, 0.3)',
-                        'neon-purple': '0 0 10px #ab00ff, 0 0 20px rgba(171, 0, 255, 0.3)'
+                        'neon-cyan': '0 0 10px rgba(0, 240, 255, 0.4)',
+                        'neon-pink': '0 0 10px rgba(255, 0, 127, 0.4)',
+                        'neon-purple': '0 0 10px rgba(171, 0, 255, 0.4)',
+                        'neon-orange': '0 0 10px rgba(249, 115, 22, 0.4)'
                     }
                 }
             }
         }
     </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- External libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-
     <style>
         :root {
             --neon-green: #00f5d4;
@@ -81,13 +83,15 @@
         /* Print Styles - Optimized for 4 Labels Per Page (2x2 Grid) */
         @media print {
             @page {
-                size: letter;
-                margin: 0.4in;
+                size: letter portrait;
+                margin: 0 !important; /* Force-remove browser default margins, headers, and footers */
             }
             body {
                 background: white !important;
                 color: black !important;
                 font-family: Arial, sans-serif !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .no-print {
                 display: none !important;
@@ -98,24 +102,24 @@
             .print-sheet {
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important;
-                gap: 15px !important;
-                padding: 0 !important;
+                grid-template-rows: repeat(2, 1fr) !important;
+                gap: 12px !important;
+                padding: 0.3in !important; /* Securely add safety padding internally to prevent paper edge clipping */
                 background: white !important;
                 width: 100% !important;
+                height: 11in !important; /* Explicitly constrain the grid sheet height to letter specifications */
                 box-sizing: border-box !important;
             }
             .print-card {
                 border: 3px solid black !important;
                 border-radius: 12px !important;
-                padding: 15px !important;
+                padding: 10px !important;
                 box-sizing: border-box !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
                 justify-content: space-between !important;
-                background: white !important;
-                color: black !important;
-                height: 4.8in !important; /* Ensures 2 rows fit comfortably within 11-inch page height */
+                height: 4.1in !important; /* Highly secure compact height guaranteeing 2 rows never overflow page limits */
                 page-break-inside: avoid !important;
                 position: relative !important;
             }
@@ -124,45 +128,28 @@
                 page-break-after: always !important;
             }
             .print-qrcode img {
-                width: 125px !important;
-                height: 125px !important;
-                margin: 5px 0 !important;
+                width: 100px !important;
+                height: 100px !important;
+                margin: 3px 0 !important;
             }
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-cyber-primary selection:text-white relative">
 
-    <!-- Toast Notifications Grid -->
-    <div id="toastNotificationBox" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none space-y-2"></div>
+    <!-- Toast Notification Popup element -->
+    <div id="toastNotificationBox" class="no-print fixed top-5 right-5 flex flex-col space-y-3 z-50 pointer-events-none"></div>
 
-    <!-- ==================== SIDEBAR: DESKTOP ONLY ==================== -->
-    <aside class="no-print hidden md:flex flex-col w-72 bg-cyber-panel border-r border-cyber-accent/30 p-5 fixed left-0 top-0 h-screen z-50 justify-between">
-        <div class="space-y-6">
-            <!-- Brand Section -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyber-primary to-cyber-accent flex items-center justify-center shadow-neon-pink">
-                    <i class="fa-solid fa-box-open text-white text-md"></i>
-                </div>
-                <div>
-                    <span class="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.0</span>
-                    <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
-                </div>
+    <!-- ==================== DESKTOP SIDEBAR NAVIGATION ==================== -->
+    <aside class="no-print hidden md:flex flex-col w-64 bg-black/40 border-r border-cyber-accent/20 backdrop-blur-md sticky top-0 h-screen p-6 justify-between flex-shrink-0">
+        <div class="space-y-8">
+            <!-- Brand Logotype -->
+            <div>
+                <h1 class="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.0</h1>
+                <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
             </div>
 
-            <!-- Native Status Indicators -->
-            <div class="border border-cyber-accent/20 bg-black/40 rounded p-3 text-[10px] space-y-1.5 font-mono">
-                <div class="flex justify-between items-center">
-                    <span>SYSTEM STATE:</span>
-                    <span class="text-green-500 font-bold"><i class="fa-solid fa-circle-check animate-pulse mr-1"></i>ONLINE</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span>CLOUD LINK:</span>
-                    <span id="desktop-sync-status" class="text-amber-500 font-bold">LOCAL_DB</span>
-                </div>
-            </div>
-
-            <!-- Desktop Nav Items -->
+            <!-- Nav drawers -->
             <nav class="flex flex-col space-y-2">
                 <button onclick="switchTab('dashboard')" id="desk-nav-dashboard" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-cyber-secondary font-bold font-mono text-sm">
                     <i class="fa-solid fa-cubes w-5"></i> <span>BOX INVENTORY</span>
@@ -180,347 +167,352 @@
                     <i class="fa-solid fa-print w-5"></i> <span>PRINT LABELS</span>
                 </button>
                 <button onclick="switchTab('settings')" id="desk-nav-settings" class="flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm">
-                    <i class="fa-solid fa-cloud-arrow-up w-5"></i> <span>CLOUD SYNC</span>
+                    <i class="fa-solid fa-gears w-5"></i> <span>CLOUD SETTINGS</span>
                 </button>
             </nav>
         </div>
 
-        <div class="border-t border-cyber-accent/10 pt-4 text-[10px] font-mono space-y-1 text-cyber-muted">
-            <span class="block font-bold text-cyber-primary">DEADLINE: JULY 14, 2026</span>
-            <span class="block">PNiX STUDIOS © 2026</span>
+        <!-- Footer status -->
+        <div class="border-t border-cyber-accent/10 pt-4 font-mono text-[9px] text-cyber-muted space-y-1">
+            <div class="flex items-center space-x-2">
+                <span id="side-status-indicator" class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                <span id="side-status-text">OFFLINE fallback</span>
+            </div>
+            <p>PNiX STUDIOS © 2026</p>
         </div>
     </aside>
 
-    <!-- ==================== MOBILE TOP HEADER ==================== -->
-    <header class="no-print border-b border-cyber-accent bg-cyber-panel/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-lg md:hidden w-full">
-        <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyber-primary to-cyber-accent flex items-center justify-center animate-pulse">
-                <i class="fa-solid fa-box-open text-white text-xs"></i>
-            </div>
-            <div>
-                <span class="text-lg font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.0</span>
-                <span class="text-[8px] block text-cyber-secondary font-mono font-bold tracking-widest">PNiX PORTAL_V3</span>
-            </div>
-        </div>
-        <div class="flex items-center space-x-2 text-xs font-mono text-cyber-muted">
-            <span id="mobile-sync-indicator" class="inline-block w-2 h-2 rounded-full bg-green-500 animate-ping mr-1"></span>
-            <span id="mobile-sync-text">LOCAL</span>
-        </div>
-    </header>
-
-    <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
-    <div class="flex-grow md:pl-72 w-full flex flex-col min-h-screen">
+    <!-- ==================== MAIN VIEWPORT ==================== -->
+    <main class="flex-grow flex flex-col min-h-screen p-4 md:p-8 max-w-5xl mx-auto w-full pb-20 md:pb-8 no-print">
         
-        <main class="flex-grow max-w-5xl w-full mx-auto p-4 pb-28 md:pb-8 space-y-6">
+        <!-- Header Info (Mobile Only) -->
+        <header class="no-print md:hidden flex justify-between items-center border-b border-cyber-primary/20 pb-4 mb-6">
+            <div>
+                <h1 class="text-lg font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.0</h1>
+                <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
+            </div>
+            <div class="flex items-center space-x-2 font-mono text-[9px] bg-cyber-primary/10 border border-cyber-primary/30 px-2 py-1 rounded">
+                <span id="mobile-status-indicator" class="w-1 h-1 rounded-full bg-red-500 animate-pulse"></span>
+                <span id="mobile-status-text" class="text-cyber-primary font-bold">OFFLINE</span>
+            </div>
+        </header>
 
-            <!-- Banner / Notification for Moving Deadline -->
-            <div class="no-print border border-cyber-primary bg-cyber-primary/5 rounded-lg p-4 flex items-start space-x-3 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-cyber-primary/10 rounded-full blur-2xl -mr-6 -mt-6"></div>
-                <i class="fa-solid fa-triangle-exclamation text-cyber-primary text-xl mt-1 animate-bounce"></i>
-                <div class="flex-grow">
-                    <h4 class="font-bold text-cyber-primary text-sm tracking-wider uppercase">MOVE-OUT DEADLINE: JULY 14, 2026</h4>
-                    <p class="text-xs text-gray-300 mt-1 font-mono">Keep moving, Josh! Point the camera at any item, auto-pack, toggle your room checklists, and sync your inventory directly to **Google Sheets** for real-time tracking.</p>
+        <!-- ==================== VIEW: DASHBOARD ==================== -->
+        <section id="view-dashboard" class="space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold uppercase tracking-wider text-white">Your Container Inventory</h2>
+                    <p class="text-xs text-cyber-muted">Create sequential room shortcodes, view packed items, and manage prints.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openAddBoxModal()" class="px-4 py-2 bg-cyber-accent text-white text-xs rounded-md shadow-neon-purple hover:bg-cyber-accent/80 font-bold uppercase tracking-wider font-mono">
+                        + ASSEMBLE CONTAINER
+                    </button>
+                    <button onclick="syncDataFromSheet()" class="px-4 py-2 bg-cyber-secondary text-cyber-bg text-xs rounded-md shadow-neon-cyan hover:bg-cyber-secondary/80 font-bold uppercase tracking-wider font-mono">
+                        <i class="fa-solid fa-arrows-rotate"></i> SYNC SHEET
+                    </button>
                 </div>
             </div>
 
-            <!-- App Loading Indicators for Heavy Libraries -->
-            <div id="ai-loading-banner" class="no-print mb-6 border border-cyber-secondary bg-cyber-secondary/5 rounded-lg p-3 flex flex-col space-y-2">
-                <div class="flex justify-between items-center text-xs text-cyber-secondary">
-                    <span class="font-mono"><i class="fa-solid fa-microchip mr-2 animate-spin"></i>INITIALIZING AI OBJECT RECOGNITION (TENSORFLOW.JS)...</span>
-                    <span id="ai-load-status">Loading...</span>
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-slate-800/60 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-cyber-primary opacity-30"></div>
+                    <span class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1 font-semibold">Total Containers</span>
+                    <span id="stat-total-boxes" class="text-2xl font-bold font-mono text-white">0</span>
                 </div>
-                <div class="w-full bg-gray-900 rounded-full h-1">
-                    <div id="ai-progress-bar" class="bg-cyber-secondary h-1 rounded-full transition-all duration-300" style="width: 20%"></div>
+                <div class="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-slate-800/60 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-cyber-secondary opacity-30"></div>
+                    <span class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1 font-semibold">Unique Items Packed</span>
+                    <span id="stat-total-items" class="text-2xl font-bold font-mono text-white">0</span>
+                </div>
+                <div class="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-slate-800/60 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-cyber-accent opacity-30"></div>
+                    <span class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1 font-semibold">Total Item Quantity</span>
+                    <span id="stat-total-qty" class="text-2xl font-bold font-mono text-white">0</span>
+                </div>
+                <div class="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-slate-800/60 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-emerald-500 opacity-30"></div>
+                    <span class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1 font-semibold">Target Move Date</span>
+                    <span class="text-sm font-bold font-mono text-emerald-400 mt-2 block">JULY 14, 2026</span>
                 </div>
             </div>
 
-            <!-- ==================== TAB: DASHBOARD ==================== -->
-            <section id="tab-dashboard" class="no-print space-y-6">
-                <!-- Stats Row -->
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="bg-cyber-panel border border-cyber-accent/30 rounded-lg p-3 text-center">
-                        <span class="text-[10px] uppercase tracking-wider text-cyber-muted block">Active Boxes</span>
-                        <span id="stat-boxes" class="text-2xl font-extrabold text-cyber-secondary">0</span>
+            <!-- Dynamic Boxes Grid -->
+            <div id="boxes-dashboard-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Javascript Renders Box Cards Here -->
+                <div class="col-span-full py-16 text-center text-cyber-muted space-y-3">
+                    <i class="fa-solid fa-box-open text-4xl animate-bounce"></i>
+                    <p class="text-sm font-mono text-center uppercase">No containers generated. Tap "+ Assemble New Box" to configure.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VIEW: ROOMS PROGRESS ==================== -->
+        <section id="view-rooms" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-xl font-bold uppercase tracking-wider text-white">Target Rooms Progress</h2>
+                <p class="text-xs text-cyber-muted">Toggle physical room readiness states and save specific packing notes.</p>
+            </div>
+
+            <div id="rooms-dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Javascript Renders Rooms Progress Here -->
+            </div>
+        </section>
+
+        <!-- ==================== VIEW: AI PACK STATION ==================== -->
+        <section id="view-pack" class="space-y-6 hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold uppercase tracking-wider text-white">AI Real-time Object Identification</h2>
+                    <p class="text-xs text-cyber-muted">Hold objects up to the webcam to let AI detect labels, then pack them in 1-click.</p>
+                </div>
+                <div>
+                    <span class="px-3 py-1 bg-cyber-secondary/10 border border-cyber-secondary/30 rounded text-cyber-secondary font-mono text-xs font-bold tracking-widest flex items-center">
+                        <span id="ai-engine-status-bulb" class="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
+                        <span id="ai-engine-status-text">TensorFlow Loading...</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Camera Viewport Card -->
+                <div class="md:col-span-2 bg-black/30 backdrop-blur-md border border-slate-800/60 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+                    <div id="webcam-fallback-view" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center space-y-2 z-10">
+                        <i class="fa-solid fa-video-slash text-cyber-muted text-3xl"></i>
+                        <h4 class="text-sm font-bold text-white uppercase font-mono">Webcam Feed Not Started</h4>
+                        <p class="text-xs text-cyber-muted max-w-xs leading-relaxed">Turn on your camera feed below. If camera permission is denied, manual inputs are available on the right-hand panel.</p>
+                        <button onclick="startAiCamera()" class="mt-2 px-4 py-2 bg-cyber-secondary text-cyber-bg rounded text-xs font-bold uppercase tracking-wider shadow-neon-cyan">Start Camera Stream</button>
                     </div>
-                    <div class="bg-cyber-panel border border-cyber-accent/30 rounded-lg p-3 text-center">
-                        <span class="text-[10px] uppercase tracking-wider text-cyber-muted block">Packed Items</span>
-                        <span id="stat-items" class="text-2xl font-extrabold text-cyber-primary">0</span>
-                    </div>
-                    <div class="bg-cyber-panel border border-cyber-accent/30 rounded-lg p-3 text-center">
-                        <span class="text-[10px] uppercase tracking-wider text-cyber-muted block">Print Queue</span>
-                        <span id="stat-print" class="text-2xl font-extrabold text-cyber-accent">0</span>
-                    </div>
-                </div>
 
-                <!-- Manual Short-Code Lookup Bar -->
-                <div class="bg-cyber-panel border border-cyber-secondary/20 rounded-lg p-4 space-y-3">
-                    <h3 class="text-xs uppercase font-mono tracking-wider text-cyber-secondary font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i> Quick Short-Code Lookup</h3>
-                    <div class="flex space-x-2">
-                        <input id="dashboard-lookup-input" type="text" placeholder="Type Box Code (e.g. KT001, BR002-F)..." class="flex-grow bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary uppercase font-mono font-bold tracking-widest">
-                        <button onclick="performManualLookup()" class="px-4 py-2 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs transition font-mono">
-                            Find Box
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Box List Header & Add Button -->
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">My Boxes</h2>
-                    <button onclick="openAddBoxModal()" class="px-3 py-1.5 bg-cyber-secondary/10 hover:bg-cyber-secondary hover:text-cyber-bg text-cyber-secondary rounded-md border border-cyber-secondary text-xs transition duration-200 uppercase tracking-wider font-bold">
-                        <i class="fa-solid fa-plus mr-1"></i> New Box
-                    </button>
-                </div>
-
-                <!-- Box Grid -->
-                <div id="boxes-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Dynamic Content Will Go Here -->
-                </div>
-                
-                <div id="empty-boxes-view" class="hidden text-center py-12 border border-dashed border-cyber-muted/30 rounded-lg space-y-3">
-                    <i class="fa-solid fa-boxes-packing text-cyber-muted text-4xl animate-pulse"></i>
-                    <h3 class="text-md font-bold text-gray-400">No Boxes Created Yet</h3>
-                    <p class="text-xs text-cyber-muted max-w-xs mx-auto">Create your first box using short-codes to start assigning scanned items. You can generate custom labels right away.</p>
-                    <button onclick="openAddBoxModal()" class="px-4 py-2 bg-cyber-accent text-white text-xs rounded-md shadow-neon-purple hover:bg-cyber-accent/80 font-bold uppercase tracking-wider">
-                        Add Box #1
-                    </button>
-                </div>
-            </section>
-
-            <!-- ==================== TAB: PACK (AI CAMERA) ==================== -->
-            <section id="tab-pack" class="no-print hidden space-y-6">
-                <h2 class="text-lg font-bold text-cyber-primary uppercase tracking-widest border-l-4 border-cyber-primary pl-2">AI Packing Station</h2>
-                
-                <!-- Box Selector -->
-                <div class="bg-cyber-panel border border-cyber-primary/20 rounded-lg p-4 space-y-3">
-                    <label class="block text-xs uppercase tracking-wider text-cyber-primary font-bold">Select Destination Box</label>
-                    <select id="pack-box-select" class="w-full bg-cyber-bg border border-cyber-primary/30 rounded px-3 py-2 text-sm focus:outline-none focus:border-cyber-primary text-white font-mono font-bold tracking-wider">
-                        <!-- Dynamic Options -->
-                    </select>
-                </div>
-
-                <!-- Camera Viewfinder -->
-                <div class="relative bg-black rounded-lg overflow-hidden border-2 border-cyber-primary shadow-neon-pink max-w-2xl mx-auto w-full">
-                    <video id="viewfinder" autoplay playsinline muted class="w-full h-64 md:h-96 object-cover transform scale-x-[-1]"></video>
-                    <canvas id="snapshot-canvas" class="hidden"></canvas>
-                    
-                    <!-- Bounding Box Overlay for AI -->
-                    <div id="camera-overlay" class="absolute inset-0 pointer-events-none"></div>
-
-                    <!-- Control Buttons Over Camera -->
-                    <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-3 px-4">
-                        <button onclick="switchCamera()" class="p-3 bg-cyber-panel/80 hover:bg-cyber-panel border border-cyber-muted text-white rounded-full transition">
-                            <i class="fa-solid fa-camera-rotate"></i>
-                        </button>
-                        <button id="capture-btn" onclick="captureAndDetect()" class="px-6 py-3 bg-cyber-primary hover:bg-cyber-primary/80 text-white rounded-full font-bold uppercase tracking-wider shadow-neon-pink flex items-center space-x-2">
-                            <i class="fa-solid fa-expand"></i> <span>Scan & Detect</span>
-                        </button>
+                    <div class="relative w-full h-full flex items-center justify-center">
+                        <video id="webcam-feed" autoplay playsinline muted class="rounded-2xl border border-slate-800 w-full object-cover max-h-[380px] hidden"></video>
+                        <canvas id="webcam-canvas" class="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"></canvas>
                     </div>
                 </div>
 
-                <!-- Detection Results Dashboard -->
-                <div id="detection-dashboard" class="hidden bg-cyber-panel border border-cyber-secondary/30 rounded-lg p-4 space-y-4 max-w-2xl mx-auto">
-                    <h3 class="text-sm font-bold text-cyber-secondary uppercase tracking-wider"><i class="fa-solid fa-brain mr-2 animate-pulse"></i>AI Detection Verdict</h3>
-                    
-                    <div class="flex items-center space-x-3">
-                        <div class="flex-grow">
-                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Recognized Item Label</label>
-                            <input id="detected-item-label" type="text" class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary font-bold">
-                        </div>
-                        <div class="w-24">
-                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Confidence</label>
-                            <div id="detected-item-confidence" class="text-sm font-bold text-cyber-secondary py-2 border-b border-cyber-secondary/20">0%</div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Item Description / Note (Optional)</label>
-                        <input id="detected-item-desc" type="text" placeholder="e.g. Red Ceramic, Fragile" class="w-full bg-cyber-bg border border-cyber-muted/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary">
-                    </div>
-
-                    <div class="flex space-x-2 pt-2">
-                        <button onclick="packDetectedItem()" class="flex-grow py-2.5 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs transition shadow-neon-cyan">
-                            <i class="fa-solid fa-box mr-1"></i> Pack Into Selected Box
-                        </button>
-                        <button onclick="discardDetection()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded text-xs uppercase tracking-wider">
-                            Discard
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ==================== TAB: SCAN (QR LOOKUP) ==================== -->
-            <section id="tab-scan" class="no-print hidden space-y-6">
-                <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">QR Inventory Scanner</h2>
-                
-                <div class="relative bg-black rounded-lg overflow-hidden border-2 border-cyber-secondary shadow-neon-cyan max-w-2xl mx-auto w-full">
-                    <!-- QR Scanner Viewport -->
-                    <div id="scanner-reader" class="w-full h-64 md:h-96"></div>
-                    
-                    <!-- Overlay Crosshair UI -->
-                    <div class="absolute inset-0 border-2 border-transparent flex items-center justify-center pointer-events-none">
-                        <div class="w-48 h-48 border-2 border-dashed border-cyber-secondary rounded-lg flex items-center justify-center relative">
-                            <div class="absolute inset-0 bg-cyber-secondary/5"></div>
-                            <div class="w-4 h-4 border-t-2 border-l-2 border-cyber-secondary absolute top-0 left-0"></div>
-                            <div class="w-4 h-4 border-t-2 border-r-2 border-cyber-secondary absolute top-0 right-0"></div>
-                            <div class="w-4 h-4 border-b-2 border-l-2 border-cyber-secondary absolute bottom-0 left-0"></div>
-                            <div class="w-4 h-4 border-b-2 border-r-2 border-cyber-secondary absolute bottom-0 right-0"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Scanned Box Details Sheet -->
-                <div id="scanned-box-result" class="hidden bg-cyber-panel border border-cyber-secondary/30 rounded-lg p-4 space-y-4 max-w-2xl mx-auto">
-                    <div class="flex justify-between items-start border-b border-cyber-secondary/20 pb-3">
+                <!-- Manual / AI Pack Control Panel -->
+                <div class="bg-black/30 backdrop-blur-md border border-slate-800/60 rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden">
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-cyber-secondary font-mono border-b border-cyber-secondary/10 pb-2 flex items-center">
+                            <i class="fa-solid fa-circle-nodes text-cyber-secondary mr-2"></i> Pack Station controls
+                        </h3>
+                        
                         <div>
-                            <span class="text-xs uppercase font-mono text-cyber-secondary tracking-widest">SCANNED BOX CONTENT</span>
-                            <div class="flex items-center space-x-3 mt-1">
-                                <h3 id="scanned-box-title" class="text-xl font-bold text-white">Box Name</h3>
-                                <span id="scanned-box-badge" class="px-2 py-0.5 rounded bg-cyber-primary text-white text-xs font-mono font-bold tracking-widest">KT001-F</span>
+                            <label class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Destination Box</label>
+                            <select id="pack-box-select" class="w-full bg-cyber-bg border border-cyber-primary/30 rounded px-3 py-2 text-sm focus:outline-none focus:border-cyber-primary text-white font-mono font-bold tracking-wider">
+                                <!-- Dynamic select boxes -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Item Label Name</label>
+                            <input id="pack-item-input" type="text" placeholder="Identify object or type item..." class="w-full bg-cyber-bg border border-cyber-primary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-primary font-bold">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Item Quantity</label>
+                            <input id="pack-item-qty" type="number" value="1" min="1" class="w-full bg-cyber-bg border border-cyber-primary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-primary font-bold font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Notes / Description (Optional)</label>
+                            <input id="pack-item-desc" type="text" placeholder="e.g. silver wrapped in bubble wrap" class="w-full bg-cyber-bg border border-cyber-primary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-primary font-medium text-xs">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-4 border-t border-cyber-secondary/10">
+                        <button onclick="packItemFromStation()" class="w-full py-3 bg-cyber-primary text-white rounded font-bold uppercase tracking-wider text-xs shadow-neon-pink transition font-mono flex items-center justify-center">
+                            <i class="fa-solid fa-box-archive mr-2"></i> Pack Into Container
+                        </button>
+                        <button id="camera-toggle-btn" onclick="stopAiCamera()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-semibold text-xs tracking-wider font-mono hidden">
+                            Stop Camera Feed
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VIEW: SCAN & IDENTIFY ==================== -->
+        <section id="view-scan" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-xl font-bold uppercase tracking-wider text-white">Scan Container Label</h2>
+                <p class="text-xs text-cyber-muted">Scan QR labels printed on boxes to view packed items instantly, or scan a Setup QR to auto-configure this device.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Webcam Scanner Frame -->
+                <div class="md:col-span-2 bg-black/30 backdrop-blur-md border border-slate-800/60 rounded-3xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+                    <div id="scanner-view-overlay" class="absolute inset-0 bg-slate-950/80 z-20 flex flex-col items-center justify-center space-y-3 p-6 text-center">
+                        <i class="fa-solid fa-qrcode text-cyber-muted text-4xl"></i>
+                        <h4 class="text-sm font-bold text-white uppercase font-mono">QR Video Scanner Off</h4>
+                        <p class="text-xs text-cyber-muted max-w-xs leading-relaxed">Turn on your device's camera to scan box barcode sticker tags or config keys.</p>
+                        <button onclick="startScanner()" class="px-4 py-2 bg-cyber-accent text-white rounded text-xs font-bold uppercase tracking-wider shadow-neon-purple font-mono">Activate Scanner</button>
+                    </div>
+
+                    <div id="scanner-reader" class="w-full max-w-md h-full rounded-2xl overflow-hidden relative"></div>
+                </div>
+
+                <!-- Scanned Result Panel -->
+                <div class="bg-black/30 backdrop-blur-md border border-slate-800/60 rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden min-h-[400px]">
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-cyber-secondary font-mono border-b border-cyber-secondary/10 pb-2">
+                            <i class="fa-solid fa-barcode text-cyber-secondary mr-2"></i> Identification Details
+                        </h3>
+
+                        <div id="scanned-placeholder" class="text-center py-16 text-cyber-muted space-y-2">
+                            <i class="fa-solid fa-video text-2xl animate-pulse"></i>
+                            <p class="text-xs font-mono">Awaiting QR scan transmission...</p>
+                        </div>
+
+                        <!-- Scanned Box Details Rendered here -->
+                        <div id="scanned-details" class="hidden space-y-4 font-mono">
+                            <div>
+                                <span id="scan-res-id" class="px-2 py-0.5 bg-cyber-primary/10 border border-cyber-primary/30 rounded text-cyber-primary text-xs font-bold tracking-widest">BOXID</span>
+                                <h2 id="scan-res-name" class="text-lg font-bold text-white uppercase tracking-wider mt-2">Box Name</h2>
+                                <p id="scan-res-desc" class="text-xs text-cyber-muted mt-1 leading-relaxed">Description details on box placement</p>
                             </div>
-                            <p id="scanned-box-meta" class="text-xs text-cyber-muted mt-0.5">Location: <span id="scanned-box-id" class="font-mono">Kitchen</span></p>
+
+                            <div class="border-t border-cyber-secondary/10 pt-3">
+                                <span class="text-[10px] text-cyber-muted uppercase tracking-widest font-bold">Packed Items (Dynamic)</span>
+                                <ul id="scan-res-items-list" class="space-y-1.5 mt-2 max-h-48 overflow-y-auto pr-2 text-xs">
+                                    <!-- Packed items appended here -->
+                                </ul>
+                            </div>
                         </div>
-                        <button onclick="closeScannedResult()" class="text-cyber-muted hover:text-white p-1">
-                            <i class="fa-solid fa-xmark text-lg"></i>
+                    </div>
+
+                    <div class="pt-4 border-t border-cyber-secondary/10">
+                        <button onclick="stopScanner()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-semibold text-xs tracking-wider font-mono">
+                            Stop Scanner Stream
                         </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VIEW: PRINT STUDIO ==================== -->
+        <section id="view-print" class="space-y-6 hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold uppercase tracking-wider text-white">Avery Sticker Printing Studio (2x2 Grid)</h2>
+                    <p class="text-xs text-cyber-muted">Queue multiple box codes to print physical shipping labels with custom QR codes and packing logs.</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="selectAllForPrint()" class="text-cyber-secondary hover:underline font-bold font-mono text-xs uppercase">Select All</button>
+                    <span class="text-cyber-muted">|</span>
+                    <button onclick="clearPrintQueue()" class="text-cyber-muted hover:text-cyber-primary font-bold font-mono text-xs uppercase">Clear All</button>
+                </div>
+            </div>
+
+            <!-- Print setup instructions card -->
+            <div class="bg-black/40 border border-cyber-secondary/20 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1 max-w-2xl">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-cyber-secondary font-mono">Print Configuration Rules</h3>
+                    <p class="text-xs text-cyber-muted">Ensure browser background graphics are enabled during print preview. For standard sticky label paper sheets (like Avery 2-by-2 labels), select 2-column portrait layout in the web print options.</p>
+                </div>
+                <button onclick="window.print()" class="px-5 py-2.5 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded-xl font-bold uppercase tracking-wider text-xs shadow-neon-cyan transition font-mono flex-shrink-0">
+                    <i class="fa-solid fa-print"></i> Execute Print
+                </button>
+            </div>
+
+            <!-- Dynamic Printable Cards Queue Selector -->
+            <div id="print-queue-checklist-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- JS appends box print checkboxes here -->
+            </div>
+        </section>
+
+        <!-- ==================== VIEW: CLOUD SETTINGS ==================== -->
+        <section id="view-settings" class="space-y-6 hidden">
+            <div>
+                <h2 class="text-xl font-bold uppercase tracking-wider text-white">Secure Cloud Sync Settings</h2>
+                <p class="text-xs text-cyber-muted">Establish serverless background pipelines with your private Google Sheet environment.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- API configuration panel -->
+                <div class="md:col-span-2 bg-black/30 backdrop-blur-md border border-cyber-accent/30 rounded-3xl p-6 relative overflow-hidden group shadow-neon-purple space-y-4">
+                    <div class="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-purple-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-cyber-secondary font-mono border-b border-cyber-secondary/10 pb-2">
+                        <i class="fa-solid fa-plug text-cyber-secondary mr-2"></i> Endpoint Handshake Interface
+                    </h3>
+
+                    <div>
+                        <label class="block text-xs text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Google Web App URL</label>
+                        <input id="settings-api-url" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
                     </div>
 
                     <div>
-                        <h4 class="text-xs uppercase font-bold text-cyber-muted tracking-wider mb-2">Contained Items</h4>
-                        <ul id="scanned-box-items-list" class="divide-y divide-cyber-muted/10 max-h-48 overflow-y-auto pr-2 space-y-1">
-                            <!-- Dynamic items -->
-                        </ul>
+                        <label class="block text-xs text-cyber-muted uppercase tracking-widest mb-1.5 font-bold font-mono">Private Shared Access Passcode (API_SECRET)</label>
+                        <input id="settings-api-token" type="password" placeholder="Enter matching custom API_SECRET..." class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
                     </div>
 
                     <div class="flex space-x-2 pt-2">
-                        <button onclick="quickPackForScanned()" class="flex-grow py-2 bg-cyber-secondary/10 hover:bg-cyber-secondary hover:text-cyber-bg text-cyber-secondary rounded font-bold uppercase tracking-wider text-xs border border-cyber-secondary transition">
-                            <i class="fa-solid fa-box-open mr-1"></i> Add More Items
+                        <button onclick="saveCloudSettings()" class="px-5 py-2.5 bg-cyber-accent text-white hover:bg-cyber-accent/80 rounded-xl font-bold uppercase tracking-wider text-xs shadow-neon-purple transition font-mono">
+                            Save & Initialize Connection
                         </button>
-                        <button onclick="printBoxLabelFromScanner()" class="px-4 py-2 bg-cyber-accent/20 hover:bg-cyber-accent text-white rounded text-xs uppercase tracking-wider border border-cyber-accent">
-                            <i class="fa-solid fa-print"></i>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ==================== TAB: ROOM PROGRESS (ROOM NOTES) ==================== -->
-            <section id="tab-rooms" class="no-print hidden space-y-6">
-                <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">Room Checklists & Progress</h2>
-                
-                <p class="text-xs text-cyber-muted font-mono leading-relaxed">
-                    Track the physical state of each room. Tap any checklist pill to toggle statuses (PACKED, REPAIRED, CLEANED, FINISHED). Type custom room notes and sync your changes.
-                </p>
-
-                <!-- Rooms Grid (Desktop Optimized Cards) -->
-                <div id="rooms-dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Dynamic Room Notes Cards -->
-                </div>
-            </section>
-
-            <!-- ==================== TAB: PRINT SHEET LABELS ==================== -->
-            <section id="tab-print" class="no-print hidden space-y-6">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-cyber-accent uppercase tracking-widest border-l-4 border-cyber-accent pl-2">Label Sheets Studio</h2>
-                    <button onclick="window.print()" class="px-4 py-2 bg-cyber-accent hover:bg-cyber-accent/80 text-white rounded-md shadow-neon-purple text-xs transition font-bold uppercase tracking-wider">
-                        <i class="fa-solid fa-print mr-1"></i> Print Labels
-                    </button>
-                </div>
-
-                <!-- Print Controls -->
-                <div class="bg-cyber-panel border border-cyber-accent/20 rounded-lg p-4 space-y-3">
-                    <h3 class="text-xs uppercase font-mono tracking-wider text-cyber-accent font-bold">Print Configuration</h3>
-                    <p class="text-xs text-cyber-muted">Ensure browser background graphics are enabled during print preview. For standard sticky label paper sheets (like Avery 2-by-2 labels), select 2-column portrait layout in the web print options.</p>
-                    
-                    <div class="flex justify-between items-center pt-2 text-xs border-t border-cyber-accent/10">
-                        <span>Active Box Count: <strong id="print-config-count" class="text-cyber-accent">0</strong></span>
-                        <button onclick="selectAllForPrint()" class="text-cyber-secondary hover:underline font-bold">Select All</button>
-                    </div>
-                </div>
-
-                <!-- Print Queue Selection Grid -->
-                <div id="print-queue-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Dynamic List of Boxes with Select Checkboxes and Mini-QR codes -->
-                </div>
-            </section>
-
-            <!-- ==================== TAB: CLOUD SYNC CONFIG ==================== -->
-            <section id="tab-settings" class="no-print hidden space-y-6 max-w-2xl mx-auto w-full">
-                <h2 class="text-lg font-bold text-cyber-secondary uppercase tracking-widest border-l-4 border-cyber-secondary pl-2">Google Sheets Cloud Connection</h2>
-                
-                <div class="bg-black/30 backdrop-blur-md border border-cyber-accent/30 rounded-3xl p-6 relative overflow-hidden group shadow-neon-purple">
-                    <h3 class="text-sm font-bold text-white font-mono flex items-center space-x-2">
-                        <i class="fa-solid fa-shield-halved text-cyber-secondary"></i>
-                        <span>Zero-Friction Sync Setup</span>
-                    </h3>
-                    <p class="text-xs text-cyber-muted leading-relaxed">
-                        Authorize this device by pasting your **Google Apps Script Web App URL** and shared secret passcode. Or, simply **scan the generated setup QR code** below with another device to sync them instantly without typing!
-                    </p>
-
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Apps Script API Web App URL</label>
-                            <input id="settings-api-url" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] uppercase text-cyber-muted tracking-wider mb-1">Spreadsheet Access Token (Shared Secret)</label>
-                            <input id="settings-api-token" type="password" placeholder="Enter matching custom API_SECRET..." class="w-full bg-cyber-bg border border-cyber-accent/30 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-secondary font-mono">
-                        </div>
-                    </div>
-
-                    <div class="flex space-x-2 pt-2">
-                        <button onclick="saveApiUrlSettings()" class="flex-grow py-2.5 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded font-bold uppercase tracking-wider text-xs transition shadow-neon-cyan font-mono">
-                            <i class="fa-solid fa-lock-open mr-1"></i> Connect and Autosave
-                        </button>
-                        <button onclick="clearApiUrlSettings()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded text-xs uppercase tracking-wider font-mono">
+                        <button onclick="clearCloudSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider font-mono">
                             Disconnect
                         </button>
                     </div>
                 </div>
 
-                <!-- DYNAMIC CONFIG SETUP QR CODE GENERATOR -->
-                <div id="settings-qr-section" class="hidden bg-cyber-panel border border-cyber-secondary/20 rounded-lg p-5 flex flex-col items-center text-center space-y-4">
-                    <h4 class="text-xs uppercase font-mono tracking-widest font-bold text-cyber-secondary"><i class="fa-solid fa-qrcode mr-1 text-cyber-primary animate-ping"></i> Test Group Sync QR Key</h4>
-                    <p class="text-xs text-cyber-muted max-w-sm">Have other users in your moving group scan this QR code with their phone's **Pack & Trace QR Scanner** to instantly connect their devices to your sheet with zero keyboard entry!</p>
-                    
-                    <div id="settings-config-qr" class="bg-white p-3 rounded-lg flex items-center justify-center"></div>
-                    <span class="text-[9px] font-mono text-cyber-muted border border-cyber-muted/20 px-2 py-0.5 rounded">Setup Payload QR Code</span>
+                <!-- Setup config QR generator -->
+                <div class="bg-black/30 backdrop-blur-md border border-slate-800/60 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+                    <div class="space-y-2">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-cyber-secondary font-mono border-b border-cyber-secondary/10 pb-2">
+                            <i class="fa-solid fa-qrcode text-cyber-secondary mr-2"></i> Fast Setup Key
+                        </h3>
+                        <p class="text-[11px] text-cyber-muted leading-relaxed font-mono">Scan this QR key using your phone's inside-app scanner to automatically sync cloud endpoints in under 1 second without typing URLs.</p>
+                    </div>
+
+                    <div class="flex items-center justify-center py-4">
+                        <div id="setup-qr-holder" class="p-2 bg-white rounded-xl inline-block">
+                            <!-- QR code vector placeholder -->
+                            <i class="fa-solid fa-qrcode text-6xl text-slate-900 p-8"></i>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="bg-cyber-panel border border-cyber-accent/10 rounded-lg p-4 space-y-2 text-xs font-mono">
-                    <h4 class="font-bold text-cyber-primary uppercase tracking-wide">Developer Trace logs</h4>
-                    <pre id="settings-sync-log" class="bg-black/50 p-3 rounded text-[10px] text-cyber-muted max-h-40 overflow-y-auto font-sans leading-relaxed">No active server transmissions. Running in offline LocalStorage fallback mode.</pre>
-                    <button onclick="testSheetFetch()" class="px-3 py-1.5 bg-cyber-accent/20 hover:bg-cyber-accent text-white border border-cyber-accent rounded text-[10px] uppercase font-bold tracking-wider font-mono">
-                        Test Connection & Sync
-                    </button>
+            <!-- Sync logger terminal panel -->
+            <div class="bg-black/30 backdrop-blur-md border border-slate-800/60 rounded-3xl p-6 space-y-3">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-cyber-secondary font-mono border-b border-cyber-secondary/10 pb-2">
+                    <i class="fa-solid fa-terminal text-cyber-secondary mr-2 animate-pulse"></i> Terminal logs
+                </h3>
+                <div id="terminal-logs" class="bg-black/60 rounded-xl p-4 font-mono text-[10px] text-cyber-muted space-y-1 h-36 overflow-y-auto leading-relaxed border border-slate-900">
+                    <div>No active server transmissions. Running in offline LocalStorage fallback mode.</div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-        </main>
-    </div>
+    </main>
 
-    <!-- ==================== MOBILE NAVIGATION BAR ==================== -->
-    <nav class="no-print fixed bottom-0 left-0 right-0 border-t border-cyber-accent/30 bg-cyber-panel/95 backdrop-blur-md py-2 px-1 z-40 shadow-2xl flex justify-around md:hidden">
-        <button id="nav-dashboard" onclick="switchTab('dashboard')" class="flex flex-col items-center space-y-1 text-cyber-secondary transition py-1 flex-1">
-            <i class="fa-solid fa-square-poll-vertical text-lg"></i>
+    <!-- ==================== MOBILE NAVIGATION TABBAR ==================== -->
+    <nav class="no-print md:hidden fixed bottom-0 left-0 right-0 h-16 bg-cyber-panel/90 backdrop-blur-md border-t border-cyber-accent/20 flex justify-around items-center z-40">
+        <button onclick="switchTab('dashboard')" id="mob-btn-dashboard" class="flex flex-col items-center justify-center flex-grow h-full text-cyber-primary">
+            <i class="fa-solid fa-gauge-high text-lg"></i>
             <span class="text-[8px] uppercase tracking-wider font-bold">Boxes</span>
         </button>
-        <button id="nav-pack" onclick="switchTab('pack')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
-            <i class="fa-solid fa-camera text-lg"></i>
-            <span class="text-[8px] uppercase tracking-wider font-bold">Pack AI</span>
-        </button>
-        <button id="nav-scan" onclick="switchTab('scan')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
-            <i class="fa-solid fa-qrcode text-lg"></i>
-            <span class="text-[8px] uppercase tracking-wider font-bold">Scan</span>
-        </button>
-        <button id="nav-rooms" onclick="switchTab('rooms')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
-            <i class="fa-solid fa-list-check text-lg"></i>
+        <button onclick="switchTab('rooms')" id="mob-btn-rooms" class="flex flex-col items-center justify-center flex-grow h-full text-gray-500">
+            <i class="fa-solid fa-circle-nodes text-lg"></i>
             <span class="text-[8px] uppercase tracking-wider font-bold">Rooms</span>
         </button>
-        <button id="nav-print" onclick="switchTab('print')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
+        <button onclick="switchTab('pack')" id="mob-btn-pack" class="flex flex-col items-center justify-center flex-grow h-full text-gray-500">
+            <i class="fa-solid fa-camera text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">AI Pack</span>
+        </button>
+        <button onclick="switchTab('scan')" id="mob-btn-scan" class="flex flex-col items-center justify-center flex-grow h-full text-gray-500">
+            <i class="fa-solid fa-qrcode text-lg"></i>
+            <span class="text-[8px] uppercase tracking-wider font-bold">Scanner</span>
+        </button>
+        <button onclick="switchTab('print')" id="mob-btn-print" class="flex flex-col items-center justify-center flex-grow h-full text-gray-500">
             <i class="fa-solid fa-print text-lg"></i>
             <span class="text-[8px] uppercase tracking-wider font-bold">Print</span>
         </button>
-        <button id="nav-settings" onclick="switchTab('settings')" class="flex flex-col items-center space-y-1 text-cyber-muted hover:text-white transition py-1 flex-1">
-            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+        <button onclick="switchTab('settings')" id="mob-btn-settings" class="flex flex-col items-center justify-center flex-grow h-full text-gray-500">
+            <i class="fa-solid fa-cloud text-lg"></i>
             <span class="text-[8px] uppercase tracking-wider font-bold">Sync</span>
         </button>
     </nav>
@@ -646,7 +638,66 @@
         </div>
     </div>
 
+    <!-- ==================== MOVE ITEM MODAL DIALOG ==================== -->
+    <div id="move-item-modal" class="no-print hidden fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-950 border border-cyber-secondary/30 rounded-3xl p-6 w-full max-w-sm space-y-6 relative shadow-neon-cyan">
+            <div class="flex justify-between items-center border-b border-cyber-secondary/20 pb-3">
+                <h3 class="text-md font-bold uppercase tracking-wider text-cyber-secondary font-mono"><i class="fa-solid fa-arrow-right-arrow-left mr-1.5 animate-pulse"></i> Transfer Packed Item</h3>
+                <button onclick="closeMoveItemModal()" class="text-cyber-muted hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-3">
+                <input id="move-item-id-hidden" type="hidden">
+                <input id="move-item-source-box-hidden" type="hidden">
+                
+                <div>
+                    <span class="text-[9px] uppercase tracking-widest text-cyber-muted font-bold font-mono">Item to Transfer</span>
+                    <p id="move-item-label-preview" class="text-md font-bold text-white uppercase mt-1">Item Name</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs uppercase text-cyber-muted tracking-wider mb-1 font-mono">Destination Box</label>
+                    <select id="move-item-dest-box-select" class="w-full bg-cyber-bg border border-cyber-secondary/30 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyber-secondary font-bold font-mono">
+                        <!-- Dynamic box list -->
+                    </select>
+                </div>
+            </div>
 
+            <div class="flex space-x-2 pt-2">
+                <button onclick="executeItemTransfer()" class="flex-grow py-2 bg-cyber-secondary text-cyber-bg hover:bg-cyber-secondary/80 rounded-xl font-bold uppercase tracking-wider text-xs shadow-neon-cyan transition font-mono">
+                    Confirm Move
+                </button>
+                <button onclick="closeMoveItemModal()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded-xl text-xs uppercase tracking-wider font-mono">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== THEMED CUSTOM CONFIRMATION MODAL ==================== -->
+    <div id="confirm-modal" class="no-print hidden fixed inset-0 z-50 overflow-y-auto bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-950 border border-red-500/30 rounded-3xl p-6 w-full max-w-sm space-y-6 relative shadow-[0_0_15px_rgba(239,68,68,0.25)]">
+            <div class="flex items-center space-x-3 text-red-500 border-b border-red-500/10 pb-3">
+                <i class="fa-solid fa-triangle-exclamation text-2xl animate-bounce"></i>
+                <h3 class="text-md font-bold uppercase tracking-wider font-mono">DANGER: CONFIRM ACTION</h3>
+            </div>
+            
+            <div>
+                <p id="confirm-modal-message" class="text-xs text-gray-300 leading-relaxed font-sans">Are you sure you want to proceed with this permanent deletion? It will sync and modify your Google Sheet.</p>
+            </div>
+
+            <div class="flex space-x-2">
+                <button id="confirm-modal-btn" class="flex-grow py-2.5 bg-red-600 text-white hover:bg-red-700 rounded-xl font-bold uppercase tracking-wider text-xs shadow-neon-pink transition font-mono">
+                    Yes, Delete
+                </button>
+                <button onclick="closeConfirmModal()" class="px-4 py-2 bg-cyber-muted/20 hover:bg-cyber-muted/40 text-white rounded-xl text-xs uppercase tracking-wider font-mono">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== BOX ITEMS MODAL DIALOG ==================== -->
     <div id="view-items-modal" class="no-print hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-950 border border-cyber-accent/30 rounded-3xl p-6 w-full max-w-md space-y-6 relative shadow-neon-purple">
             <div class="flex justify-between items-center border-b border-cyber-accent/20 pb-3">
@@ -696,26 +747,8 @@
 
     <!-- Application Script Section -->
     <script>
-        // App State
-        let db = {
-            boxes: [],
-            rooms: {}
-        };
+        // Global variables & state trackers
         let activeTab = 'dashboard';
-        let cocoModel = null;
-        let isAiLoaded = false;
-        let activeCameraStream = null;
-        let currentFacingMode = 'environment';
-        let selectedBoxIdForPack = null;
-        let scannerInst = null;
-        let activeEditItemId = null; // Track item inline editing state
-        let expandedRoomCode = null; // Track currently expanded room card inside Rooms progress
-        let expandedBoxIds = {}; // Map of box IDs expanded to show items nested under Room progress
-        let selectedAddPills = []; // Array of selected handling codes in Add Box modal (e.g. ["F", "U"])
-        let selectedEditPills = []; // Array of selected handling codes in Edit Box modal
-        let apiServerUrl = '';
-        let apiServerToken = '';
-
         const roomMappings = {
             "BA": "Bathroom",
             "BR": "Bedroom",
@@ -726,47 +759,20 @@
             "PR": "Playroom",
             "ST": "Storage"
         };
-
         const handlingMappings = {
+            "-C": { label: "CHEMICALS", icon: "fa-flask", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40", printIcon: "🧪" },
             "-F": { label: "FRAGILE", icon: "fa-wine-glass", color: "bg-red-500/20 text-red-500 border-red-500/40", printIcon: "🍷" },
-            "-U": { label: "THIS SIDE UP", icon: "fa-arrow-up", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/40", printIcon: "⬆️⬆️" },
             "-H": { label: "HEAVY", icon: "fa-weight-hanging", color: "bg-amber-500/20 text-amber-500 border-amber-500/40", printIcon: "⚖️" },
-            "-D": { label: "DO NOT TURN OVER", icon: "fa-rotate-left", color: "bg-purple-500/20 text-purple-500 border-purple-500/40", printIcon: "🚫🔄" }
+            "-I": { label: "IGNITABLE", icon: "fa-fire", color: "bg-orange-500/20 text-orange-400 border-orange-500/40", printIcon: "🔥" },
+            "-L": { label: "LIQUID", icon: "fa-droplet", color: "bg-blue-500/20 text-blue-400 border-blue-500/40", printIcon: "💧" },
+            "-P": { label: "PERISHABLE", icon: "fa-apple-whole", color: "bg-green-600/20 text-green-500 border-green-600/40", printIcon: "🍏" },
+            "-S": { label: "SPECIAL NOTES", icon: "fa-circle-info", color: "bg-cyan-500/20 text-cyan-500 border-cyan-500/40", printIcon: "ℹ️" },
+            "-U": { label: "UPRIGHT", icon: "fa-arrow-up", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/40", printIcon: "⬆️" }
         };
-
-        const defaultBoxes = [
-            {
-                id: 'KT001-F',
-                name: 'Kitchen — Dinnerware',
-                roomCode: 'KT',
-                room: 'Kitchen',
-                desc: 'Wine glasses, crystal plates',
-                handlingCode: '-F',
-                items: [
-                    { id: 'item_1', label: 'Crystal Wine Glasses', desc: 'Fragile, wrapped in paper', count: 6 },
-                    { id: 'item_2', label: 'Porcelain Plates', desc: 'Set of 12', count: 12 }
-                ],
-                printQueue: true
-            },
-            {
-                id: 'BR001',
-                name: 'Closet — Heavy Winter Coats',
-                roomCode: 'BR',
-                room: 'Bedroom',
-                desc: 'Trench coats, parkas',
-                handlingCode: '',
-                items: [
-                    { id: 'item_3', label: 'Down Jacket', desc: 'North Face, black', count: 2 },
-                    { id: 'item_4', label: 'Wool Coats', desc: 'Grey', count: 3 }
-                ],
-                printQueue: false
-            }
-        ];
-
         const defaultRoomsState = {
             "BA": { name: "Bathroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "BR": { name: "Bedroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
-      "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
+            "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "KT": { name: "Kitchen", packed: true, repaired: false, cleaned: false, finished: false, note: "Double check spice cabinet storage drawers before locking." },
             "LR": { name: "Living Room", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
@@ -775,340 +781,90 @@
             "ST": { name: "Storage", packed: false, repaired: false, cleaned: false, finished: false, note: "" }
         };
 
-        window.addEventListener('DOMContentLoaded', () => {
-            initDatabase();
-            loadCocoSsdModel();
+        // Application State
+        let db = {
+            boxes: [],
+            rooms: JSON.parse(JSON.stringify(defaultRoomsState))
+        };
+        
+        let apiServerUrl = '';
+        let apiServerToken = '';
+        let activeModalBoxId = null;
+        let scannerInst = null;
+        let activeEditItemId = null; // Track item inline editing state
+        let expandedRoomCode = null; // Track currently expanded room card inside Rooms progress
+        let expandedBoxIds = {}; // Map of box IDs expanded to show items nested under Room progress
+        let selectedAddPills = []; // Array of selected handling codes in Add Box modal (e.g. ["F", "U"])
+        let selectedEditPills = []; // Array of selected handling codes in Edit Box modal
+
+        // ==================== INITIALIZATION & STORAGE ====================
+        window.onload = function() {
+            loadSavedDatabase();
             switchTab('dashboard');
-            renderApp();
-        });
+            initTensorflowModel();
+        };
 
-        function initDatabase() {
-            const savedData = localStorage.getItem('p_and_t_move_db_v4');
-            apiServerUrl = localStorage.getItem('p_and_t_api_url_v4') || '';
-            apiServerToken = localStorage.getItem('p_and_t_api_token_v4') || '';
+        function loadSavedDatabase() {
+            const savedDb = localStorage.getItem('pnix_packtrack_db_v5');
+            const savedUrl = localStorage.getItem('pnix_packtrack_api_url');
+            const savedToken = localStorage.getItem('pnix_packtrack_api_token');
             
-            document.getElementById('settings-api-url').value = apiServerUrl;
-            document.getElementById('settings-api-token').value = apiServerToken;
-
-            if (savedData) {
+            if (savedDb) {
                 try {
-                    db = JSON.parse(savedData);
-                    if (!db.rooms) db.rooms = defaultRoomsState;
+                    db = JSON.parse(savedDb);
+                    // Protect structures
+                    if (!db.rooms) db.rooms = JSON.parse(JSON.stringify(defaultRoomsState));
                 } catch(e) {
-                    console.error("Failed to parse DB, resetting", e);
-                    db = { boxes: defaultBoxes, rooms: defaultRoomsState };
-                    saveDatabase();
+                    console.error("Local DB read warning:", e);
                 }
-            } else {
-                db = { boxes: defaultBoxes, rooms: defaultRoomsState };
-                saveDatabase();
+            }
+            if (savedUrl) {
+                apiServerUrl = savedUrl;
+                document.getElementById('settings-api-url').value = savedUrl;
+            }
+            if (savedToken) {
+                apiServerToken = savedToken;
+                document.getElementById('settings-api-token').value = savedToken;
             }
 
-            updateCloudStatusLabels();
+            updateCloudUIBadge();
+            renderApp();
+            
             if (apiServerUrl && apiServerToken) {
                 syncDataFromSheet();
-                renderConfigQrCode();
             }
         }
 
         function saveDatabase() {
-            localStorage.setItem('p_and_t_move_db_v4', JSON.stringify(db));
+            localStorage.setItem('pnix_packtrack_db_v5', JSON.stringify(db));
         }
 
-        function updateCloudStatusLabels() {
-            const deskLabel = document.getElementById('desktop-sync-status');
-            const mobIndicator = document.getElementById('mobile-sync-indicator');
-            const mobLabel = document.getElementById('mobile-sync-text');
-
-            if (apiServerUrl && apiServerToken) {
-                deskLabel.innerText = "SECURE_SYNC";
-                deskLabel.className = "text-cyber-secondary font-bold font-mono";
-                mobIndicator.className = "inline-block w-2 h-2 rounded-full bg-cyber-secondary animate-ping mr-1";
-                mobLabel.innerText = "CLOUD";
-                mobLabel.className = "text-cyber-secondary font-bold font-mono";
-            } else {
-                deskLabel.innerText = "LOCAL_DB";
-                deskLabel.className = "text-amber-500 font-bold font-mono";
-                mobIndicator.className = "inline-block w-2 h-2 rounded-full bg-green-500 animate-ping mr-1";
-                mobLabel.innerText = "LOCAL";
-                mobLabel.className = "text-green-500 font-bold font-mono";
-            }
-        }
-
-        // ==================== GOOGLE SHEETS CLOUD INTEGRATION ====================
-        function saveApiUrlSettings() {
-            const urlInput = document.getElementById('settings-api-url').value.trim();
-            const tokenInput = document.getElementById('settings-api-token').value.trim();
-
-            if (!urlInput || !tokenInput) {
-                alert("Please enter both the Apps Script Web App URL and your Custom Shared Passcode.");
-                return;
-            }
-
-            apiServerUrl = urlInput;
-            apiServerToken = tokenInput;
-            
-            localStorage.setItem('p_and_t_api_url_v4', urlInput);
-            localStorage.setItem('p_and_t_api_token_v4', tokenInput);
-            
-            updateCloudStatusLabels();
-            logSyncEvent("Secure cloud configuration initialized. Connecting...");
-            syncDataFromSheet();
+        // ==================== RENDERING COMPONENT DRIVERS ====================
+        function renderApp() {
+            renderStatsCount();
+            renderBoxesDashboard();
+            renderRoomsDashboard();
+            renderPrintQueueList();
+            renderPrintSheetLayout();
             renderConfigQrCode();
         }
 
-        function clearApiUrlSettings() {
-            apiServerUrl = '';
-            apiServerToken = '';
-            localStorage.removeItem('p_and_t_api_url_v4');
-            localStorage.removeItem('p_and_t_api_token_v4');
-            updateCloudStatusLabels();
+        function renderStatsCount() {
+            document.getElementById('stat-total-boxes').innerText = db.boxes.length;
             
-            document.getElementById('settings-api-url').value = '';
-            document.getElementById('settings-api-token').value = '';
-            document.getElementById('settings-qr-section').classList.add('hidden');
-            
-            logSyncEvent("Cloud connection terminated. Erased setup secrets. Running offline.");
-            alert("Disconnected from Google Sheets endpoint.");
-            renderApp();
-        }
-
-        function logSyncEvent(text) {
-            const logBox = document.getElementById('settings-sync-log');
-            const timestamp = new Date().toLocaleTimeString();
-            logBox.innerText += `\n[${timestamp}] ${text}`;
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        async function syncDataFromSheet() {
-            if (!apiServerUrl || !apiServerToken) return;
-            logSyncEvent("GET request dispatched. Downloading spreadsheet records...");
-            
-            try {
-                // Pass static token in query parameter for read query
-                const targetUrl = `${apiServerUrl}?token=${encodeURIComponent(apiServerToken)}`;
-                
-                const response = await fetch(targetUrl);
-                if (response.ok) {
-                    const cloudData = await response.json();
-                    
-                    if (cloudData && cloudData.status === "error") {
-                        logSyncEvent(`Spreadsheet validation failure: ${cloudData.message}. Verify matching passcode.`);
-                        showToast("Access Denied!");
-                        return;
-                    }
-
-                    if (cloudData && cloudData.boxes) {
-                        db.boxes = cloudData.boxes;
-                        if (cloudData.rooms) {
-                            db.rooms = cloudData.rooms;
-                        }
-                        saveDatabase();
-                        renderApp();
-                        logSyncEvent(`Synchronized! Successfully fetched ${cloudData.boxes.length} containers and checklists.`);
-                        showToast("Cloud Sync Successful!");
-                    }
-                } else {
-                    logSyncEvent(`Sync failure. HTTP Server Status: ${response.status}`);
-                }
-            } catch(e) {
-                logSyncEvent(`Network connection trace issue: ${e.message}. Retaining active local buffer.`);
-            }
-        }
-
-        async function testSheetFetch() {
-            if (!apiServerUrl || !apiServerToken) {
-                alert("Please configure a Google Sheet URL and Token in settings first.");
-                return;
-            }
-            await syncDataFromSheet();
-        }
-
-        async function pushBoxToCloud(box) {
-            if (!apiServerUrl || !apiServerToken) return;
-            logSyncEvent(`Autosaving box ${box.id} row to cloud spreadsheet...`);
-            try {
-                const payload = {
-                    token: apiServerToken,
-                    action: "addBox",
-                    id: box.id,
-                    name: box.name,
-                    roomCode: box.roomCode,
-                    room: box.room,
-                    desc: box.desc,
-                    handlingCode: box.handlingCode
-                };
-                await fetch(apiServerUrl, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+            const uniqueItems = db.boxes.reduce((acc, box) => {
+                const itemsList = box.items || [];
+                itemsList.forEach(i => {
+                    const label = i.label.toLowerCase().trim();
+                    acc[label] = (acc[label] || 0) + i.count;
                 });
-                logSyncEvent(`Success: appended box row for ${box.id}.`);
-            } catch(e) {
-                logSyncEvent(`Cloud write warning: ${e.message}. Buffered locally.`);
-            }
-        }
+                return acc;
+            }, {});
 
-        async function pushItemToCloud(boxId, item) {
-            if (!apiServerUrl || !apiServerToken) return;
-            logSyncEvent(`Autosaving packed item [${item.label}] row to cloud...`);
-            try {
-                const payload = {
-                    token: apiServerToken,
-                    action: "addItem",
-                    boxId: boxId,
-                    label: item.label,
-                    desc: item.desc || "",
-                    count: item.count
-                };
-                await fetch(apiServerUrl, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                logSyncEvent(`Success: item appended under box ${boxId}.`);
-            } catch(e) {
-                logSyncEvent(`Cloud write warning: ${e.message}. Buffered locally.`);
-            }
-        }
-
-        async function pushRoomStatusToCloud(roomCode, roomObj) {
-            if (!apiServerUrl || !apiServerToken) return;
-            logSyncEvent(`Autosaving room state checks for [${roomCode}] to cloud...`);
-            try {
-                const payload = {
-                    token: apiServerToken,
-                    action: "updateRoom",
-                    roomCode: roomCode,
-                    packed: roomObj.packed,
-                    repaired: roomObj.repaired,
-                    cleaned: roomObj.cleaned,
-                    finished: roomObj.finished,
-                    note: roomObj.note || ""
-                };
-                await fetch(apiServerUrl, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                logSyncEvent(`Success: updated status index for room ${roomCode}.`);
-            } catch(e) {
-                logSyncEvent(`Cloud write warning: ${e.message}. Buffered locally.`);
-            }
-        }
-
-        // ==================== ZERO-FRICTION CONFIG QR GENERATION ====================
-        function renderConfigQrCode() {
-            if (!apiServerUrl || !apiServerToken) return;
+            document.getElementById('stat-total-items').innerText = Object.keys(uniqueItems).length;
             
-            const qrContainer = document.getElementById('settings-config-qr');
-            const qrSection = document.getElementById('settings-qr-section');
-            qrContainer.innerHTML = '';
-
-            // Package credentials payload inside a lightweight JSON block
-            const configPayload = {
-                type: "moveconfig",
-                url: apiServerUrl,
-                token: apiServerToken
-            };
-
-            const payloadStr = JSON.stringify(configPayload);
-
-            try {
-                // Generate secure setup QR code
-                const qr = qrcode(0, 'M'); // Type 12 supports large string lengths
-                qr.addData(payloadStr);
-                qr.make();
-                
-                qrContainer.innerHTML = qr.createImgTag(4, 4);
-                qrSection.classList.remove('hidden');
-            } catch(err) {
-                console.error("Config QR generation failure", err);
-                qrSection.classList.add('hidden');
-            }
-        }
-
-
-        // ==================== ALL CORE JS CODE FUNCTIONS REMAIN INTEGRAL AND STABLE ====================
-        async function loadCocoSsdModel() {
-            const banner = document.getElementById('ai-loading-banner');
-            const progress = document.getElementById('ai-progress-bar');
-            const loadText = document.getElementById('ai-load-status');
-            try {
-                progress.style.width = '40%';
-                // Load MobileNet-v2 base model for drastically higher accuracy and object classification precision
-                cocoModel = await cocoSsd.load({ base: "mobilenet_v2" });
-                progress.style.width = '100%';
-                loadText.innerText = 'ONLINE';
-                isAiLoaded = true;
-                setTimeout(() => {
-                    banner.classList.add('transition-opacity', 'duration-1000', 'opacity-0');
-                    setTimeout(() => banner.style.display = 'none', 1000);
-                }, 2000);
-            } catch(e) {
-                console.error("AI failure loading", e);
-            }
-        }
-
-        function switchTab(tabId) {
-            if (activeTab === 'pack' && tabId !== 'pack') stopCamera();
-            if (activeTab === 'scan' && tabId !== 'scan') stopScanner();
-            activeTab = tabId;
-            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
-            document.querySelectorAll('aside nav > button').forEach(btn => {
-                btn.classList.remove('text-cyber-primary', 'text-cyber-secondary', 'text-cyber-accent');
-                btn.classList.add('text-slate-400');
-            });
-            document.querySelectorAll('nav > button').forEach(btn => {
-                btn.classList.remove('text-cyber-secondary', 'text-cyber-primary', 'text-cyber-accent');
-                btn.classList.add('text-cyber-muted');
-            });
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            const navBtn = document.getElementById(`nav-${tabId}`);
-            const deskBtn = document.getElementById(`desk-nav-${tabId}`);
-            let color = 'text-cyber-secondary';
-            if (tabId === 'pack') color = 'text-cyber-primary';
-            if (tabId === 'print') color = 'text-cyber-accent';
-            if (navBtn) navBtn.classList.add(color);
-            if (deskBtn) deskBtn.classList.add(color, 'bg-cyber-primary/10');
-            if (tabId === 'pack') startCamera();
-            if (tabId === 'scan') startScanner();
-            renderApp();
-        }
-
-        function performManualLookup() {
-            const input = document.getElementById('dashboard-lookup-input');
-            const code = input.value.trim().toUpperCase();
-            if (!code) return;
-            const box = db.boxes.find(b => b.id.toUpperCase() === code || b.id.toUpperCase().split('-')[0] === code);
-            if (box) {
-                openViewItemsModal(box.id);
-                input.value = '';
-            } else {
-                alert(`Box "${code}" not found.`);
-            }
-        }
-
-        function renderApp() {
-            updateStats();
-            renderBoxesDashboard();
-            renderBoxDropdownForPack();
-            renderPrintQueueGrid();
-            renderPrintSheetLayout();
-            renderRoomsProgressDashboard();
-        }
-
-        function updateStats() {
-            const boxesCount = db.boxes.length;
-            const itemsCount = db.boxes.reduce((acc, b) => acc + b.items.reduce((sum, i) => sum + i.count, 0), 0);
-            const queuedCount = db.boxes.filter(b => b.printQueue).length;
-            document.getElementById('stat-boxes').innerText = boxesCount;
-            document.getElementById('stat-items').innerText = itemsCount;
-            document.getElementById('stat-print').innerText = queuedCount;
-            document.getElementById('print-config-count').innerText = queuedCount;
+            const totalQty = Object.values(uniqueItems).reduce((sum, qty) => sum + qty, 0);
+            document.getElementById('stat-total-qty').innerText = totalQty;
         }
 
         function renderBoxesDashboard() {
@@ -1125,9 +881,17 @@
             db.boxes.forEach(box => {
                 const itemsList = box.items || [];
                 const totalItemQty = itemsList.reduce((sum, item) => sum + item.count, 0);
+                
+                // Set custom neon glow border, gradient bar and blob colors matching handling types
+                let glowClass = 'border-slate-800/60 hover:border-cyber-secondary/40';
+                let barGradient = 'from-cyber-primary to-cyber-secondary';
+                let glowBlob = 'bg-cyber-secondary/5 group-hover:bg-cyber-secondary/10';
                 let handlingBadge = '';
+
                 if (box.handlingCode && typeof box.handlingCode === "string" && box.handlingCode.startsWith("-")) {
                     const codes = box.handlingCode.replace("-", "").split("");
+                    
+                    // Display multiple color badges inline
                     codes.forEach(c => {
                         const key = "-" + c;
                         if (handlingMappings[key]) {
@@ -1135,41 +899,191 @@
                             handlingBadge += `<span class="px-2 py-0.5 text-[8px] font-bold border rounded ${match.color} uppercase tracking-wider flex items-center space-x-1"><i class="fa-solid ${match.icon} mr-0.5"></i> ${match.label}</span>`;
                         }
                     });
+
+                    // Match main glow layout colors to the highest precedence code in the order of F -> U -> H -> D -> S
+                    const primaryCode = ["C", "F", "H", "I", "L", "P", "S", "U"].find(p => codes.indexOf(p) > -1);
+                    if (primaryCode === "C") {
+                        glowClass = 'border-yellow-500/20 hover:border-yellow-500/50';
+                        barGradient = 'from-yellow-600 to-amber-500';
+                        glowBlob = 'bg-yellow-500/5 group-hover:bg-yellow-500/10';
+                    } else if (primaryCode === "I") {
+                        glowClass = 'border-orange-500/20 hover:border-orange-500/50';
+                        barGradient = 'from-orange-600 to-red-500';
+                        glowBlob = 'bg-orange-500/5 group-hover:bg-orange-500/10';
+                    } else if (primaryCode === "L") {
+                        glowClass = 'border-blue-500/20 hover:border-blue-500/50';
+                        barGradient = 'from-blue-600 to-cyan-500';
+                        glowBlob = 'bg-blue-500/5 group-hover:bg-blue-500/10';
+                    } else if (primaryCode === "P") {
+                        glowClass = 'border-green-500/20 hover:border-green-500/50';
+                        barGradient = 'from-green-600 to-emerald-500';
+                        glowBlob = 'bg-green-500/5 group-hover:bg-green-500/10';
+                    } else if (primaryCode === "F") {
+                        glowClass = 'border-red-500/20 hover:border-red-500/50';
+                        barGradient = 'from-red-600 to-pink-500';
+                        glowBlob = 'bg-red-500/5 group-hover:bg-red-500/10';
+                    } else if (primaryCode === "U") {
+                        glowClass = 'border-emerald-500/20 hover:border-emerald-500/50';
+                        barGradient = 'from-emerald-600 to-teal-500';
+                        glowBlob = 'bg-emerald-500/5 group-hover:bg-emerald-500/10';
+                    } else if (primaryCode === "H") {
+                        glowClass = 'border-amber-500/20 hover:border-amber-500/50';
+                        barGradient = 'from-amber-600 to-yellow-500';
+                        glowBlob = 'bg-amber-500/5 group-hover:bg-amber-500/10';
+                    } else if (primaryCode === "D") {
+                        glowClass = 'border-purple-500/20 hover:border-purple-500/50';
+                        barGradient = 'from-purple-600 to-fuchsia-500';
+                        glowBlob = 'bg-purple-500/5 group-hover:bg-purple-500/10';
+                    } else if (primaryCode === "S") {
+                        glowClass = 'border-cyan-500/20 hover:border-cyan-500/50';
+                        barGradient = 'from-cyan-600 to-blue-500';
+                        glowBlob = 'bg-cyan-500/5 group-hover:bg-cyan-500/10';
+                    }
                 }
+
                 const card = document.createElement('div');
-                card.className = 'bg-cyber-panel border border-cyber-secondary/30 rounded-lg p-4 flex flex-col justify-between hover:border-cyber-secondary transition relative overflow-hidden group';
+                card.className = 'bg-black/30 backdrop-blur-md rounded-3xl border p-6 flex flex-col justify-between group hover:border-slate-700/80 transition-all duration-300 relative overflow-hidden ' + glowClass;
                 card.innerHTML = `
-                    <div class="absolute top-0 right-0 w-2 h-2 rounded-full m-3 ${box.printQueue ? 'bg-cyber-accent animate-ping' : 'bg-transparent'}"></div>
-                    <div>
-                        <div class="flex justify-between items-start flex-wrap gap-2">
-                            <span class="px-2.5 py-0.5 bg-cyber-secondary/10 border border-cyber-secondary/30 rounded text-cyber-secondary font-mono text-xs font-bold tracking-widest">${box.id}</span>
-                            ${handlingBadge}
+                    <!-- Hover Edge Accent -->
+                    <div class="absolute top-0 right-0 w-1.5 h-full bg-gradient-to-b ${barGradient} opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <!-- Glowing Blob -->
+                    <div class="absolute top-0 right-0 w-24 h-24 ${glowBlob} rounded-full blur-2xl transition-all"></div>
+                    
+                    <div class="relative z-10 flex flex-col justify-between h-full w-full">
+                        <div>
+                            <div class="flex justify-between items-start flex-wrap gap-2">
+                                <span class="px-2.5 py-0.5 bg-cyber-secondary/10 border border-cyber-secondary/30 rounded-xl text-cyber-secondary font-mono text-xs font-bold tracking-widest">${box.id}</span>
+                                <div class="flex flex-wrap gap-1">${handlingBadge}</div>
+                            </div>
+                            <h3 class="text-md font-bold text-white mt-4 uppercase tracking-wider truncate font-sans">${box.name}</h3>
+                            <p class="text-xs text-cyber-muted mt-1.5 font-mono line-clamp-2">${box.desc || 'No description notes provided.'}</p>
                         </div>
-                        <h3 class="text-md font-bold text-white mt-2.5 uppercase tracking-wide truncate">${box.name}</h3>
-                        <p class="text-xs text-cyber-muted mt-1 font-mono line-clamp-1">${box.desc || 'No description'}</p>
-                    </div>
-                    <div class="border-t border-cyber-secondary/10 mt-4 pt-3 flex justify-between items-center text-xs">
-                        <span class="font-mono text-cyber-muted">${(box.items || []).length} classes (${totalItemQty} qty)</span>
-                        <div class="flex space-x-2">
-                            <button onclick="openViewItemsModal('${box.id}')" class="px-2.5 py-1 bg-cyber-secondary/10 text-cyber-secondary hover:bg-cyber-secondary hover:text-cyber-bg rounded transition uppercase tracking-wider font-bold text-[10px]">
-                                <i class="fa-solid fa-layer-group"></i> Items
-                            </button>
-                            <button onclick="toggleBoxPrintQueue('${box.id}')" class="px-2.5 py-1 ${box.printQueue ? 'bg-cyber-accent text-white' : 'bg-slate-800 text-slate-400'} rounded-lg transition" title="Toggle Print Queue">
-                                <i class="fa-solid fa-print"></i>
-                            </button>
+                        <div class="border-t border-cyber-secondary/10 mt-6 pt-3 flex justify-between items-center text-xs">
+                            <span class="font-mono text-cyber-muted">${(box.items || []).length} classes (${totalItemQty} qty)</span>
+                            <div class="flex space-x-2">
+                                <button onclick="openEditBoxModal('${box.id}')" class="px-2.5 py-1 bg-cyber-accent/15 text-cyber-accent hover:bg-cyber-accent hover:text-white rounded-xl transition uppercase tracking-wider font-bold text-[10px]" title="Edit Box Metadata">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </button>
+                                <button onclick="openViewItemsModal('${box.id}')" class="px-2.5 py-1 bg-cyber-secondary/10 text-cyber-secondary hover:bg-cyber-secondary hover:text-cyber-bg rounded-xl transition uppercase tracking-wider font-bold text-[10px]">
+                                    <i class="fa-solid fa-layer-group"></i> Items
+                                </button>
+                                <button onclick="toggleBoxPrintQueue('${box.id}')" class="px-2.5 py-1 ${box.printQueue ? 'bg-cyber-accent text-white shadow-neon-purple' : 'bg-slate-800 text-slate-400'} rounded-lg transition" title="Toggle Print Queue">
+                                    <i class="fa-solid fa-print"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 grid.appendChild(card);
             });
         }
 
-        function toggleBoxPrintQueue(id) {
-            const box = db.boxes.find(b => b.id === id);
+        function toggleBoxPrintQueue(boxId) {
+            const box = db.boxes.find(b => b.id === boxId);
             if (box) {
                 box.printQueue = !box.printQueue;
                 saveDatabase();
                 renderApp();
+            }
+        }
+
+        function selectAllForPrint() {
+            db.boxes.forEach(b => b.printQueue = true);
+            saveDatabase();
+            renderApp();
+        }
+
+        function clearPrintQueue() {
+            db.boxes.forEach(b => b.printQueue = false);
+            saveDatabase();
+            renderApp();
+        }
+
+        function updateItemQty(boxId, itemId, step) {
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            const item = box.items.find(i => i.id === itemId);
+            if (item) {
+                item.count = Math.max(1, item.count + step);
+                saveDatabase();
+                renderItemsModalList();
+                renderApp();
+                
+                // Sync changes to spreadsheet
+                pushItemToCloud(boxId, item);
+            }
+        }
+
+        function removeItemFromBox(boxId, itemId) {
+            const box = db.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            const item = box.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            showConfirmModal(`Confirm: Permanently delete item "${item.label}" from box ${boxId}? This will remove it from the Google Sheet.`, () => {
+                box.items = box.items.filter(i => i.id !== itemId);
+                saveDatabase();
+                closeViewItemsModal();
+                renderApp();
+                
+                deleteItemOnCloud(boxId, item.label);
+                showToast(`Removed "${item.label}" from box.`);
+            });
+        }
+
+        // ==================== CASCADING DELETION METHODS ====================
+        function toggleRoomStatusPill(roomCode, pillKey) {
+            db.rooms[roomCode][pillKey] = !db.rooms[roomCode][pillKey];
+            saveDatabase();
+            renderRoomsDashboard();
+            pushRoomStatusToCloud(roomCode, db.rooms[roomCode]);
+        }
+
+        function toggleRoomExpansion(roomCode) {
+            expandedRoomCode = (expandedRoomCode === roomCode ? null : roomCode);
+            renderRoomsDashboard();
+        }
+
+        function toggleBoxExpansion(boxId) {
+            expandedBoxIds[boxId] = !expandedBoxIds[boxId];
+            renderRoomsDashboard();
+        }
+
+        async function deleteBoxOnCloud(boxId) {
+            if (!apiServerUrl || !apiServerToken) return;
+            try {
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: apiServerToken,
+                        action: "deleteBox",
+                        id: boxId
+                    })
+                });
+                logSyncEvent(`Success: Cascading delete executed on Sheet for box ${boxId}.`);
+            } catch(e) {
+                logSyncEvent(`Delete push warning: ${e.message}`);
+            }
+        }
+
+        async function deleteItemOnCloud(boxId, itemLabel) {
+            if (!apiServerUrl || !apiServerToken) return;
+            try {
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: apiServerToken,
+                        action: "deleteItem",
+                        boxId: boxId,
+                        label: itemLabel
+                    })
+                });
+                logSyncEvent(`Success: Item [${itemLabel}] deleted from Sheet.`);
+            } catch(e) {
+                logSyncEvent(`Delete push warning: ${e.message}`);
             }
         }
 
@@ -1197,7 +1111,7 @@
                 
                 const matchingBoxes = db.boxes.filter(b => b.roomCode === code);
                 const boxesInRoom = matchingBoxes.length;
-                const itemsInRoom = matchingBoxes.reduce((sum, b) => sum + b.items.reduce((s, i) => s + i.count, 0), 0);
+                const itemsInRoom = matchingBoxes.reduce((sum, b) => sum + (b.items || []).reduce((s, i) => s + i.count, 0), 0);
                 
                 // Construct Nested Inventory HTML if Expanded
                 let expandedInventoryHtml = '';
@@ -1220,7 +1134,7 @@
                                 if ((box.items || []).length === 0) {
                                     boxItemsHtml += `<li class="text-[10px] text-cyber-muted italic">This box is empty.</li>`;
                                 } else {
-                                    (box.items || []).forEach(item => {
+                                    box.items.forEach(item => {
                                         boxItemsHtml += `
                                             <li class="flex justify-between items-center text-[10px] font-mono border-b border-white/5 py-1">
                                                 <span class="text-gray-300 font-bold uppercase">${item.label} (x${item.count})</span>
@@ -1241,10 +1155,10 @@
                             expandedInventoryHtml += `
                                 <div class="border-b border-cyber-secondary/10 pb-2">
                                     <div class="flex justify-between items-center">
-                                        <TouchableOpacity onclick="toggleBoxExpansion('${box.id}')" class="flex-grow cursor-pointer flex items-center space-x-2">
+                                        <div onclick="toggleBoxExpansion('${box.id}')" class="flex-grow cursor-pointer flex items-center space-x-2">
                                             <i class="fa-solid ${isBoxExpanded ? 'fa-square-minus text-cyber-secondary' : 'fa-square-plus text-cyber-secondary'}"></i>
                                             <span class="font-bold text-white uppercase text-[10px] tracking-wide">${box.id} — ${box.name}</span>
-                                        </TouchableOpacity>
+                                        </div>
                                         <div class="flex space-x-2">
                                             <button onclick="deleteBoxFromNestedTree('${box.id}')" class="text-red-400 hover:text-red-500 p-1" title="Delete Box">
                                                 <i class="fa-solid fa-trash-can text-[10px]"></i>
@@ -1298,186 +1212,136 @@
             });
         }
 
-
-        // ==================== NESTED EXPANSION & DELETION SYSTEM ====================
-        function toggleRoomExpansion(roomCode) {
-            expandedRoomCode = (expandedRoomCode === roomCode ? null : roomCode);
-            renderRoomsDashboard();
-        }
-
-        function toggleBoxExpansion(boxId) {
-            expandedBoxIds[boxId] = !expandedBoxIds[boxId];
-            renderRoomsDashboard();
-        }
-
-        function deleteBoxFromModal() {
-            const id = document.getElementById('edit-box-id-hidden').value;
-            if (!id) return;
-            
-            if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete Box "${id}" and all of its packed items?`)) {
-                // Delete locally
-                db.boxes = db.boxes.filter(b => b.id !== id);
-                saveDatabase();
-                closeEditBoxModal();
-                renderApp();
-                
-                // Delete on Sheets
-                deleteBoxOnCloud(id);
-                showToast(`Box ${id} deleted.`);
-            }
-        }
-
-        function deleteBoxFromNestedTree(boxId) {
-            if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete Box "${boxId}" and all of its packed items?`)) {
-                db.boxes = db.boxes.filter(b => b.id !== boxId);
-                saveDatabase();
-                renderApp();
-                
-                deleteBoxOnCloud(boxId);
-                showToast(`Box ${boxId} deleted.`);
-            }
-        }
-
-        function deleteItemFromNestedTree(boxId, itemId) {
-            const box = db.boxes.find(b => b.id === boxId);
-            if (!box) return;
-            
-            const item = box.items.find(i => i.id === itemId);
-            if (!item) return;
-
-            if (confirm(`Are you sure you want to delete "${item.label}" from Box ${boxId}?`)) {
-                box.items = box.items.filter(i => i.id !== itemId);
-                saveDatabase();
-                renderApp();
-                
-                deleteItemOnCloud(boxId, item.label);
-                showToast(`Item "${item.label}" deleted.`);
-            }
-        }
-
-        async function deleteBoxOnCloud(boxId) {
-            if (!apiServerUrl || !apiServerToken) return;
-            try {
-                await fetch(apiServerUrl, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        token: apiServerToken,
-                        action: "deleteBox",
-                        id: boxId
-                    })
-                });
-                logSyncEvent(`Success: Cascading delete executed on Sheet for box ${boxId}.`);
-            } catch(e) {
-                logSyncEvent(`Delete push warning: ${e.message}`);
-            }
-        }
-
-        async function deleteItemOnCloud(boxId, itemLabel) {
-            if (!apiServerUrl || !apiServerToken) return;
-            try {
-                await fetch(apiServerUrl, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        token: apiServerToken,
-                        action: "deleteItem",
-                        boxId: boxId,
-                        label: itemLabel
-                    })
-                });
-                logSyncEvent(`Success: Item [${itemLabel}] deleted from Sheet.`);
-            } catch(e) {
-                logSyncEvent(`Delete push warning: ${e.message}`);
-            }
-        }
-
-        function toggleRoomStatusPill(roomCode, pillKey) {
-            db.rooms[roomCode][pillKey] = !db.rooms[roomCode][pillKey];
-            saveDatabase();
-            renderRoomsDashboard();
-            pushRoomStatusToCloud(roomCode, db.rooms[roomCode]);
-        }
-
         function updateRoomNoteValue(roomCode) {
-            const textVal = document.getElementById(`note-text-${roomCode}`).value.trim();
-            db.rooms[roomCode].note = textVal;
+            const text = document.getElementById(`note-text-${roomCode}`).value;
+            db.rooms[roomCode].note = text;
             saveDatabase();
             pushRoomStatusToCloud(roomCode, db.rooms[roomCode]);
-            showToast(`Room Note Saved for ${roomCode}`);
         }
 
-        function renderRoomsProgressDashboard() {
-            if (activeTab === 'rooms') renderRoomsDashboard();
-        }
-
-        function createNewBox() {
-            const roomCode = document.getElementById('modal-box-room-select').value;
-            
-            // Compile multi-select handling care suffix (e.g. -FUH)
-            let handlingCode = "";
-            if (selectedAddPills.length > 0) {
-                const sortedPills = ["C", "F", "H", "I", "L", "P", "S", "U"].filter(p => selectedAddPills.indexOf(p) > -1);
-                handlingCode = "-" + sortedPills.join("");
-            }
-
-            const existingCount = db.boxes.filter(b => b.roomCode === roomCode).length;
-            const serial = String(existingCount + 1).padStart(3, '0');
-            const boxId = `${roomCode}${serial}${handlingCode}`;
-            const name = document.getElementById('modal-box-name').value.trim();
-            const desc = document.getElementById('modal-box-desc').value.trim();
-            
-            if (!name) {
-                alert("Box descriptive name is required!");
-                return;
-            }
-            
-            const newBox = {
-                id: boxId,
-                name: name,
-                roomCode: roomCode,
-                room: roomMappings[roomCode] || 'Storage',
-                desc: desc,
-                handlingCode: handlingCode,
-                items: [],
-                printQueue: true
-            };
-            db.boxes.push(newBox);
-            saveDatabase();
-            closeAddBoxModal();
-            renderApp();
-            pushBoxToCloud(newBox);
-            showToast(`Box ${boxId} Created Successfully!`);
-        }
-
-
-        function renderBoxDropdownForPack() {
-            const select = document.getElementById("pack-box-select");
-            if (!select) return;
-            select.innerHTML = "";
+        function renderPrintQueueList() {
+            const box = document.getElementById('print-queue-checklist-grid');
+            box.innerHTML = '';
             
             if (db.boxes.length === 0) {
-                select.innerHTML = "<option value=\"\">(No boxes. Create one first!)</option>";
+                box.innerHTML = '<div class="col-span-full text-center py-6 text-xs text-cyber-muted font-mono">No containers in database to print.</div>';
                 return;
             }
 
-            db.boxes.forEach(box => {
-                const opt = document.createElement("option");
-                opt.value = box.id;
-                opt.text = `${box.id} — ${box.name}`;
-                if (selectedBoxIdForPack === box.id) {
-                    opt.selected = true;
-                }
-                select.appendChild(opt);
+            db.boxes.forEach(b => {
+                const totalItemQty = b.items.reduce((sum, item) => sum + item.count, 0);
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between p-3 bg-black/40 border border-slate-900 rounded-xl';
+                el.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="queue-box-${b.id}" ${b.printQueue ? 'checked' : ''} onchange="toggleBoxPrintQueue('${b.id}')" class="w-4 h-4 rounded text-cyber-secondary focus:ring-0">
+                        <label for="queue-box-${b.id}" class="cursor-pointer">
+                            <span class="font-bold text-white font-mono text-xs uppercase tracking-wider">${b.id}</span>
+                            <span class="text-cyber-muted text-xs block">${b.name} (${totalItemQty} items)</span>
+                        </label>
+                    </div>`;
+                box.appendChild(el);
             });
-
-            if (!selectedBoxIdForPack && db.boxes.length > 0) {
-                selectedBoxIdForPack = db.boxes[0].id;
-            }
         }
 
+        // ==================== MASTER PRINT GENERATION LAYER ====================
+        function renderPrintSheetLayout() {
+            const container = document.getElementById('print-sheet');
+            container.innerHTML = '';
+            const queuedBoxes = db.boxes.filter(b => b.printQueue);
+            if (queuedBoxes.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-12 font-mono uppercase text-xs">Print queue empty.</p>';
+                return;
+            }
+            queuedBoxes.forEach(box => {
+                const itemsList = box.items || [];
+                const totalItemQty = itemsList.reduce((sum, item) => sum + item.count, 0);
+                let safetySymbol = '';
+                if (box.handlingCode && typeof box.handlingCode === "string" && box.handlingCode.startsWith("-")) {
+                    const codes = box.handlingCode.replace("-", "").split("");
+                    let badgesHtml = "";
+                    
+                    codes.forEach(c => {
+                        const key = "-" + c;
+                        if (handlingMappings[key]) {
+                            const match = handlingMappings[key];
+                            badgesHtml += `<span style="font-size: 10px; border: 2px solid black; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px;">${match.printIcon} ${match.label}</span>`;
+                        }
+                    });
+                    
+                    if (badgesHtml) {
+                        safetySymbol = `<div style="margin-bottom: 8px; display: flex; flex-wrap: wrap; justify-content: center; width: 100%; gap: 2px;">${badgesHtml}</div>`;
+                    }
+                }
+                container.innerHTML += `
+                    <div class="print-card">
+                        <div style="font-size: 32px; font-weight: 900; letter-spacing: 2px; border: 4px solid black; padding: 5px 20px; border-radius: 8px; font-family: monospace; background-color: black; color: white; margin-bottom: 15px;">${box.id}</div>
+                        ${safetySymbol}
+                        <div style="font-size: 20px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; text-align: center;">${box.name}</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 15px;">DESTINATION: ${box.room.toUpperCase()}</div>
+                        <div id="full-qr-${box.id}" class="print-qrcode"></div>
+                        <div style="width: 100%; border-top: 2px dashed black; margin-top: 15px; padding-top: 10px; text-align: left; font-size: 11px;">
+                            <span style="font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px;">Box Contents List (${totalItemQty} items total):</span>
+                            <div style="column-count: 2; column-gap: 15px;">
+                                ${itemsList.map(i => `• ${i.label.toUpperCase()} (x${i.count})`).join('<br>')}
+                            </div>
+                        </div>
+                    </div>
+                ` ;
+                setTimeout(() => {
+                    const qr = qrcode(5, 'M');
+                    qr.addData(`moveapp:${box.id}`);
+                    qr.make();
+                    const targetDiv = document.getElementById(`full-qr-${box.id}`);
+                    if (targetDiv) {
+                        targetDiv.innerHTML = qr.createImgTag(5, 5);
+                    }
+                }, 50);
+            });
+        }
+
+        // ==================== TAB NAVIGATION ROUTING ====================
+        function switchTab(tabId) {
+            activeTab = tabId;
+            const viewIds = ['view-dashboard', 'view-rooms', 'view-pack', 'view-scan', 'view-print', 'view-settings'];
+            viewIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            // Apply desktop nav styling active states
+            const navKeys = ['dashboard', 'rooms', 'pack', 'scan', 'print', 'settings'];
+            navKeys.forEach(k => {
+                const sideBtn = document.getElementById(`desk-nav-${k}`);
+                const mobBtn = document.getElementById(`mob-btn-${k}`);
+                if (sideBtn) {
+                    sideBtn.className = k === tabId 
+                        ? "flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-cyber-secondary font-bold font-mono text-sm"
+                        : "flex items-center space-x-3 text-left w-full py-2.5 px-3 rounded hover:bg-cyber-primary/10 transition text-slate-400 font-bold font-mono text-sm";
+                }
+                if (mobBtn) {
+                    mobBtn.className = k === tabId
+                        ? "flex flex-col items-center justify-center flex-grow h-full text-cyber-primary"
+                        : "flex flex-col items-center justify-center flex-grow h-full text-gray-500";
+                }
+            });
+
+            if (tabId === 'pack') {
+                initWebcamSelector();
+            } else {
+                stopAiCamera();
+            }
+            if (tabId === 'scan') {
+                // scanning hooks start
+            } else {
+                stopScanner();
+            }
+
+            renderApp();
+        }
+
+        // ==================== MODALS INTERFACES ====================
         function openAddBoxModal() {
             selectedAddPills = [];
             updatePillVisuals("add", selectedAddPills);
@@ -1490,10 +1354,533 @@
             document.getElementById('add-box-modal').classList.add('hidden');
             document.getElementById('modal-box-name').value = '';
             document.getElementById('modal-box-desc').value = '';
-
         }
 
+        // ==================== CLOUD INTEGRATION & HANDSHAKES ====================
+        function saveCloudSettings() {
+            const urlInput = document.getElementById('settings-api-url').value.trim();
+            const tokenInput = document.getElementById('settings-api-token').value.trim();
+            
+            if (!urlInput || !tokenInput) {
+                alert("Please provide both Apps Script Endpoint and Access Token.");
+                return;
+            }
 
+            apiServerUrl = urlInput;
+            apiServerToken = tokenInput;
+
+            localStorage.setItem('pnix_packtrack_api_url_v4', urlInput);
+            localStorage.setItem('pnix_packtrack_api_token_v4', tokenInput);
+
+            updateCloudUIBadge();
+            syncDataFromSheet();
+        }
+
+        function clearCloudSettings() {
+            localStorage.removeItem('pnix_packtrack_api_url_v4');
+            localStorage.removeItem('pnix_packtrack_api_token_v4');
+            apiServerUrl = '';
+            apiServerToken = '';
+            document.getElementById('settings-api-url').value = '';
+            document.getElementById('settings-api-token').value = '';
+            
+            updateCloudUIBadge();
+            logSyncEvent("Cloud Sync terminated. Device in sandbox LocalStorage fallback mode.");
+        }
+
+        function updateCloudUIBadge() {
+            const sInd = document.getElementById('side-status-indicator');
+            const sTxt = document.getElementById('side-status-text');
+            const mInd = document.getElementById('mobile-status-indicator');
+            const mTxt = document.getElementById('mobile-status-text');
+
+            if (apiServerUrl && apiServerToken) {
+                if (sInd) sInd.className = 'w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse';
+                if (sTxt) sTxt.innerText = 'Connected: CLOUD';
+                if (mInd) mInd.className = 'w-1 h-1 rounded-full bg-green-500 animate-pulse';
+                if (mTxt) {
+                    mTxt.innerText = 'CONNECTED';
+                    mTxt.className = 'text-green-500 font-bold';
+                }
+            } else {
+                if (sInd) sInd.className = 'w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse';
+                if (sTxt) sTxt.innerText = 'OFFLINE fallback';
+                if (mInd) mInd.className = 'w-1 h-1 rounded-full bg-red-500';
+                if (mTxt) {
+                    mTxt.innerText = 'OFFLINE';
+                    mTxt.className = 'text-cyber-primary font-bold';
+                }
+            }
+        }
+
+        function logSyncEvent(message) {
+            const terminal = document.getElementById('terminal-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            terminal.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        async function syncDataFromSheet() {
+            if (!apiServerUrl || !apiServerToken) return;
+            logSyncEvent("GET request dispatched. Pulling cloud records to execute smart merge...");
+            
+            try {
+                const targetUrl = `${apiServerUrl}?token=${encodeURIComponent(apiServerToken)}`;
+                const response = await fetch(targetUrl);
+                
+                if (response.ok) {
+                    const cloudData = await response.json();
+                    
+                    if (cloudData && cloudData.status === "error") {
+                        logSyncEvent(`Spreadsheet validation failure: ${cloudData.message}. Verify passcode.`);
+                        showToast("Access Denied!");
+                        return;
+                    }
+
+                    if (cloudData && Array.isArray(cloudData.boxes)) {
+                        const cloudBoxes = cloudData.boxes;
+                        const cloudRooms = cloudData.rooms || {};
+                        
+                        // --- TWO-WAY SMART MERGE ---
+                        // 1. Merge Rooms
+                        Object.keys(cloudRooms).forEach(code => {
+                            if (db.rooms[code]) {
+                                db.rooms[code].packed = db.rooms[code].packed || cloudRooms[code].packed;
+                                db.rooms[code].repaired = db.rooms[code].repaired || cloudRooms[code].repaired;
+                                db.rooms[code].cleaned = db.rooms[code].cleaned || cloudRooms[code].cleaned;
+                                db.rooms[code].finished = db.rooms[code].finished || cloudRooms[code].finished;
+                                if (cloudRooms[code].note && !db.rooms[code].note) {
+                                    db.rooms[code].note = cloudRooms[code].note;
+                                }
+                            } else {
+                                db.rooms[code] = cloudRooms[code];
+                            }
+                        });
+
+                        // 2. Queue local offline additions
+                        let localPushesQueued = [];
+                        const cloudBoxIds = cloudBoxes.map(b => b.id.toUpperCase());
+                        
+                        db.boxes.forEach(localBox => {
+                            if (cloudBoxIds.indexOf(localBox.id.toUpperCase()) === -1) {
+                                // This box was created offline. Retain and push to Sheet!
+                                localPushesQueued.push(localBox);
+                            }
+                        });
+
+                        // 3. Merge Cloud boxes into local list
+                        cloudBoxes.forEach(cloudBox => {
+                            const localBoxIndex = db.boxes.findIndex(b => b.id.toUpperCase() === cloudBox.id.toUpperCase());
+                            
+                            if (localBoxIndex > -1) {
+                                const localBox = db.boxes[localBoxIndex];
+                                
+                                // Merge Box attributes from sheet
+                                localBox.name = cloudBox.name;
+                                localBox.desc = cloudBox.desc;
+                                localBox.room = cloudBox.room;
+                                localBox.roomCode = cloudBox.roomCode;
+                                localBox.handlingCode = cloudBox.handlingCode;
+                                
+                                // Merge Items
+                                cloudBox.items.forEach(cloudItem => {
+                                    const localItemIndex = localBox.items.findIndex(i => i.label.toLowerCase() === cloudItem.label.toLowerCase());
+                                    if (localItemIndex > -1) {
+                                        localBox.items[localItemIndex].count = Math.max(localBox.items[localItemIndex].count, cloudItem.count);
+                                        if (cloudItem.desc) localBox.items[localItemIndex].desc = cloudItem.desc;
+                                    } else {
+                                        localBox.items.push(cloudItem);
+                                    }
+                                });
+                            } else {
+                                // Add new cloud box to local list
+                                db.boxes.push(cloudBox);
+                            }
+                        });
+
+                        saveDatabase();
+                        renderApp();
+                        logSyncEvent(`Merge completed. Merged ${cloudBoxes.length} spreadsheet records with local storage.`);
+                        
+                        // 4. Push offline additions to server
+                        if (localPushesQueued.length > 0) {
+                            logSyncEvent("Uploading offline boxes to sheet...");
+                            for (const localBox of localPushesQueued) {
+                                await pushBoxToCloud(localBox);
+                                for (const item of localBox.items) {
+                                    await pushItemToCloud(localBox.id, item);
+                                }
+                            }
+                            logSyncEvent("Cloud push complete. Local changes uploaded!");
+                        }
+                        
+                        showToast("Real-time Synced!");
+                    }
+                } else {
+                    logSyncEvent(`Sync failure. HTTP Server Status: ${response.status}`);
+                }
+            } catch(e) {
+                logSyncEvent(`Merge network error: ${e.message}`);
+            }
+        }
+
+        async function pushBoxToCloud(box) {
+            if (!apiServerUrl || !apiServerToken) return;
+            try {
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: apiServerToken,
+                        action: "addBox",
+                        id: box.id,
+                        name: box.name,
+                        roomCode: box.roomCode,
+                        room: box.room,
+                        desc: box.desc,
+                        handlingCode: box.handlingCode
+                    })
+                });
+                logSyncEvent(`Transmitted Box: successfully configured backup row for ${box.id}.`);
+            } catch(e) {
+                logSyncEvent(`Sync error: ${e.message}`);
+            }
+        }
+
+        async function pushItemToCloud(boxId, item) {
+            if (!apiServerUrl || !apiServerToken) return;
+            try {
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: apiServerToken,
+                        action: "addItem",
+                        boxId: boxId,
+                        label: item.label,
+                        desc: item.desc || "",
+                        count: item.count
+                    })
+                });
+                logSyncEvent(`Transmitted Item: backed up [${item.label}] inside container ${boxId}.`);
+            } catch(e) {
+                logSyncEvent(`Sync error: ${e.message}`);
+            }
+        }
+
+        async function pushRoomStatusToCloud(roomCode, roomObj) {
+            if (!apiServerUrl || !apiServerToken) return;
+            try {
+                await fetch(apiServerUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        token: apiServerToken,
+                        action: "updateRoom",
+                        roomCode: roomCode,
+                        packed: roomObj.packed,
+                        repaired: roomObj.repaired,
+                        cleaned: roomObj.cleaned,
+                        finished: roomObj.finished,
+                        note: roomObj.note
+                    })
+                });
+                logSyncEvent(`Transmitted status checklists updates for Room ${roomCode}.`);
+            } catch(e) {
+                logSyncEvent(`Sync error: ${e.message}`);
+            }
+        }
+
+        function renderConfigQrCode() {
+            const configPayload = {
+                type: "moveconfig",
+                url: apiServerUrl,
+                token: apiServerToken
+            };
+
+            const div = document.getElementById('setup-qr-holder');
+            if (apiServerUrl && apiServerToken) {
+                div.innerHTML = '';
+                const qr = qrcode(0, 'M');
+                qr.addData(JSON.stringify(configPayload));
+                qr.make();
+                div.innerHTML = qr.createImgTag(5, 5);
+            } else {
+                div.innerHTML = '<i class="fa-solid fa-qrcode text-6xl text-slate-900 p-8"></i>';
+            }
+        }
+
+        // ==================== WEBCAM INFRASTRUCTURE (AI TENSORFLOW STATION) ====================
+        let webcamStream = null;
+        let objectDetectorModel = null;
+        let isCameraStreamActive = false;
+
+        function initWebcamSelector() {
+            const select = document.getElementById('pack-box-select');
+            select.innerHTML = '';
+            
+            if (db.boxes.length === 0) {
+                select.innerHTML = '<option value="">(Create Box first!)</option>';
+                return;
+            }
+
+            db.boxes.forEach(box => {
+                const opt = document.createElement('option');
+                opt.value = box.id;
+                opt.text = `${box.id} — ${box.name}`;
+                select.appendChild(opt);
+            });
+        }
+
+        async function initTensorflowModel() {
+            const statusBulb = document.getElementById('ai-engine-status-bulb');
+            const statusText = document.getElementById('ai-engine-status-text');
+
+            try {
+                // cocoSsd is registered globally via JS imports
+                objectDetectorModel = await cocoSsd.load();
+                statusBulb.className = 'w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse';
+                statusText.innerText = 'COCO-SSD AI Active';
+                statusText.className = 'text-green-500';
+            } catch(e) {
+                console.error("Tensorflow initialization warning:", e);
+                statusText.innerText = 'AI offline manual fallback';
+            }
+        }
+
+        async function startAiCamera() {
+            const video = document.getElementById('webcam-feed');
+            const fallback = document.getElementById('webcam-fallback-view');
+            const toggleBtn = document.getElementById('camera-toggle-btn');
+
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment" },
+                    audio: false
+                });
+
+                video.srcObject = webcamStream;
+                video.classList.remove('hidden');
+                fallback.classList.add('hidden');
+                if (toggleBtn) toggleBtn.classList.remove('hidden');
+                isCameraStreamActive = true;
+                
+                // Begin bounding boxes processing loops
+                detectWebFrameLoop();
+            } catch(err) {
+                alert("Camera inaccessible. Ensure permissions are granted over secure HTTPS connection context.");
+                console.error(err);
+            }
+        }
+
+        function stopAiCamera() {
+            const video = document.getElementById('webcam-feed');
+            const fallback = document.getElementById('webcam-fallback-view');
+            const toggleBtn = document.getElementById('camera-toggle-btn');
+            const canvas = document.getElementById('webcam-canvas');
+
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+
+            if (video) video.classList.add('hidden');
+            if (fallback) fallback.classList.remove('hidden');
+            if (toggleBtn) toggleBtn.classList.add('hidden');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            isCameraStreamActive = false;
+        }
+
+        async function detectWebFrameLoop() {
+            if (!isCameraStreamActive || !objectDetectorModel) return;
+
+            const video = document.getElementById('webcam-feed');
+            const canvas = document.getElementById('webcam-canvas');
+            if (!video || !canvas) return;
+
+            // Align bounding canvas coordinates to streaming video frames dimensions
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            try {
+                const predictions = await objectDetectorModel.detect(video, 20, 0.35); // Tune: Detect up to 20 objects at a high-sensitivity 35% score threshold
+                
+                if (predictions.length > 0) {
+                    predictions.forEach(p => {
+                        // Draw cyber style glowing overlays bounding boxes
+                        ctx.strokeStyle = '#00f0ff';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
+
+                        // Label overlay background panel
+                        ctx.fillStyle = 'rgba(0, 240, 255, 0.85)';
+                        ctx.fillRect(p.bbox[0], p.bbox[1] - 22, p.bbox[2], 22);
+
+                        ctx.fillStyle = '#0a0a0c';
+                        ctx.font = 'bold 11px monospace';
+                        const scorePct = Math.round(p.score * 100);
+                        const labelText = `${p.class.toUpperCase()} [${scorePct}%]`;
+                        ctx.fillText(labelText, p.bbox[0] + 8, p.bbox[1] - 6);
+
+                        // Auto populate item description with highest confidence score detection
+                        if (p.score > 0.65) {
+                            document.getElementById('pack-item-input').value = capitalizeFirstLetter(p.class);
+                        }
+                    });
+                }
+            } catch(e) {
+                console.error("Frame analysis loop skipped:", e);
+            }
+
+            // Loop inside browser rendering interval
+            if (isCameraStreamActive) {
+                requestAnimationFrame(detectWebFrameLoop);
+            }
+        }
+
+        // ==================== WEBCAM BARCODE RECEIVER (SCAN TAP) ====================
+        function startScanner() {
+            if (scannerInst) stopScanner();
+            scannerInst = new Html5Qrcode("scanner-reader");
+            
+            // Dynamic qrbox function to prevent viewfinder scaling mismatch and crop errors on phones
+            const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+                let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                let qrboxSize = Math.floor(minEdge * 0.7); // Use 70% of the smallest camera viewfinder edge
+                return {
+                    width: qrboxSize,
+                    height: qrboxSize
+                };
+            };
+            
+            const config = { 
+                fps: 15, // Higher frame rate for smoother detection
+                qrbox: qrboxFunction,
+                aspectRatio: 1.0 // Ensure square ratio for camera focusing
+            };
+            
+            scannerInst.start({ facingMode: "environment" }, config, onQrScanSuccess, onQrScanFailure)
+                .catch(err => console.error("Scanner error", err));
+        }
+
+        function stopScanner() {
+            const overlay = document.getElementById('scanner-view-overlay');
+            if (scannerInst && scannerInst.isScanning) {
+                scannerInst.stop().then(() => {
+                    scannerInst = null;
+                    if (overlay) overlay.classList.remove('hidden');
+                }).catch(err => console.error("Failed to stop scanner stream:", err));
+            }
+        }
+
+        // SCAN SUCCESS HANDLER: Natively supports both BOX CODES and SYSTEM CONFIG DECODING!
+        function onQrScanSuccess(decodedText) {
+            const overlay = document.getElementById('scanner-view-overlay');
+            
+            // QR configuration scanner hook
+            if (decodedText.startsWith('{') && decodedText.includes('"type":"moveconfig"')) {
+                try {
+                    const parsed = JSON.parse(decodedText);
+                    if (parsed.url && parsed.token) {
+                        apiServerUrl = parsed.url;
+                        apiServerToken = parsed.token;
+                        
+                        localStorage.setItem('pnix_packtrack_api_url_v4', parsed.url);
+                        localStorage.setItem('pnix_packtrack_api_token_v4', parsed.token);
+                        
+                        document.getElementById('settings-url').value = parsed.url;
+                        document.getElementById('settings-token').value = parsed.token;
+
+                        updateCloudUIBadge();
+                        stopScanner();
+                        if (overlay) overlay.classList.remove('hidden');
+                        
+                        showToast("Setup Synced Instantly!");
+                        syncDataFromSheet();
+                        switchTab('dashboard');
+                    }
+                    return;
+                } catch(e) {
+                    console.error("JSON config QR decoding warning:", e);
+                }
+            }
+
+            // Standard container code scanners
+            let boxId = decodedText;
+            if (decodedText.startsWith('moveapp:')) {
+                boxId = decodedText.split(':')[1];
+            }
+
+            const box = db.boxes.find(b => b.id.toUpperCase() === boxId.toUpperCase());
+            const placeholder = document.getElementById('scanned-placeholder');
+            const details = document.getElementById('scanned-details');
+
+            if (box) {
+                placeholder.classList.add('hidden');
+                details.classList.remove('hidden');
+                
+                document.getElementById('scan-res-id').innerText = box.id;
+                document.getElementById('scan-res-name').innerText = box.name;
+                document.getElementById('scan-res-desc').innerText = box.desc || 'No description notes provided.';
+                
+                const list = document.getElementById('scan-res-items-list');
+                list.innerHTML = '';
+                
+                if (box.items && box.items.length > 0) {
+                    box.items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'py-1 flex justify-between border-b border-cyber-accent/10 font-bold';
+                        li.innerHTML = `<span>• ${item.label.toUpperCase()}</span> <span>x${item.count}</span>`;
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.innerHTML = '<li class="text-cyber-muted font-mono italic text-[10px]">Container empty.</li>';
+                }
+
+                showToast(`Container ${box.id} Scanned!`);
+                stopScanner();
+                if (overlay) overlay.classList.remove('hidden');
+            } else {
+                alert(`Scanned barcode key "${boxId}" not found in local index.`);
+            }
+        }
+
+        function onQrScanFailure(error) {
+            // Silence debugging scanner polling logs
+        }
+
+        // ==================== VISUAL USER UTILITIES ====================
+        function showToast(message) {
+            const box = document.getElementById("toastNotificationBox");
+            if (!box) return;
+            const alertCard = document.createElement("div");
+            alertCard.className = "bg-cyber-panel border border-cyber-secondary text-white p-3 rounded shadow-neon-cyan max-w-xs text-xs font-mono flex items-center space-x-2 pointer-events-auto transition duration-300 transform translate-x-12 opacity-0";
+            alertCard.innerHTML = `<i class="fa-solid fa-circle-nodes text-cyber-secondary animate-pulse"></i> <span>${message}</span>`;
+            box.appendChild(alertCard);
+            
+            setTimeout(() => {
+                alertCard.classList.remove("translate-x-12", "opacity-0");
+            }, 50);
+
+            setTimeout(() => {
+                alertCard.classList.add("opacity-0", "translate-y-2");
+                setTimeout(() => alertCard.remove(), 500);
+            }, 3500);
+        }
+
+        function capitalizeFirstLetter(string) {
+            if (!string) return '';
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
 
         // ==================== PILL MULTI-SELECT HANDLERS ====================
         const pillStyles = {
@@ -1539,7 +1926,6 @@
                 el.className = `px-2.5 py-1 rounded-xl text-[10px] font-bold border transition uppercase font-mono ${isActive ? styles.active : styles.inactive}`;
             });
         }
-
 
         // ==================== THEMED DELETION CONFIRMATION SYSTEM ====================
         let activeConfirmCallback = null;
@@ -1689,6 +2075,9 @@
 
         // ==================== BOX EDITING METADATA ====================
         function openEditBoxModal(boxId) {
+            // Cleanly close items list modal if open to avoid overlay stacking
+            closeViewItemsModal();
+
             const box = db.boxes.find(b => b.id === boxId);
             if (!box) return;
 
@@ -1708,8 +2097,6 @@
         }
 
         function closeEditBoxModal() {
-            selectedEditPills = [];
-            updatePillVisuals("edit", selectedEditPills);
             document.getElementById('edit-box-modal').classList.add('hidden');
         }
 
@@ -1817,7 +2204,8 @@
 
         function closeViewItemsModal() {
             document.getElementById('view-items-modal').classList.add('hidden');
-            document.getElementById('quick-add-item-input').value = '';
+            const nameInput = document.getElementById('quick-add-item-input');
+            if (nameInput) nameInput.value = '';
             activeModalBoxId = null;
         }
 
@@ -1826,460 +2214,103 @@
             list.innerHTML = '';
             const box = db.boxes.find(b => b.id === activeModalBoxId);
             if (!box || (box.items || []).length === 0) {
-                list.innerHTML = '<li class="text-xs text-cyber-muted text-center py-4 font-mono">No items packed.</li>';
+                list.innerHTML = '<li class="text-center text-gray-500 py-6 font-mono text-[10px]">No items packed inside yet.</li>';
                 return;
             }
-            (box.items || []).forEach(item => {
+            box.items.forEach(item => {
                 const li = document.createElement('li');
-                li.className = 'flex justify-between items-center py-2 text-xs border-b border-cyber-muted/10';
-                li.innerHTML = `<div><span class="font-bold text-white uppercase">${item.label}</span>${item.desc ? `<p class="text-[10px] text-cyber-muted font-mono">${item.desc}</p>` : ''}</div><div class="flex items-center space-x-3"><div class="flex items-center space-x-2"><button onclick="updateItemQty('${box.id}', '${item.id}', -1)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center font-bold font-mono">-</button><span class="font-bold text-cyber-secondary font-mono">${item.count}</span><button onclick="updateItemQty('${box.id}', '${item.id}', 1)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center font-bold font-mono">+</button></div><button onclick="removeItemFromBox('${box.id}', '${item.id}')" class="text-red-500 hover:text-red-400 p-1"><i class="fa-solid fa-trash-can"></i></button></div>`;
+                li.className = 'py-3.5 border-b border-cyber-muted/10 flex flex-col justify-between';
+                
+                if (activeEditItemId === item.id) {
+                    // Render edit form inline
+                    li.innerHTML = `
+                        <div class="space-y-2.5 w-full">
+                            <div class="flex space-x-2">
+                                <input id="edit-item-label-${item.id}" type="text" value="${item.label}" class="flex-grow bg-cyber-bg border border-cyber-secondary/30 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:border-cyber-secondary font-bold">
+                                <input id="edit-item-count-${item.id}" type="number" value="${item.count}" min="1" class="w-16 bg-cyber-bg border border-cyber-secondary/30 rounded-xl px-2 py-1 text-xs text-white text-center focus:outline-none focus:border-cyber-secondary font-bold font-mono">
+                            </div>
+                            <div class="flex space-x-2">
+                                <input id="edit-item-desc-${item.id}" type="text" value="${item.desc || ''}" placeholder="Notes..." class="flex-grow bg-cyber-bg border border-cyber-secondary/30 rounded-xl px-2.5 py-1 text-[10px] text-gray-300 focus:outline-none focus:border-cyber-secondary">
+                                <div class="flex space-x-1">
+                                    <button onclick="saveItemDetails('${item.id}')" class="px-2.5 py-1 bg-green-500/20 hover:bg-green-500 text-white hover:text-black rounded-lg text-xs" title="Save"><i class="fa-solid fa-check"></i></button>
+                                    <button onclick="cancelItemEdit()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    // Render standard read-only item list row
+                    li.innerHTML = `
+                        <div class="flex justify-between items-center w-full">
+                            <div>
+                                <span class="font-bold text-white uppercase text-xs">${item.label}</span>
+                                ${item.desc ? `<p class="text-[10px] text-cyber-muted font-mono mt-0.5">${item.desc}</p>` : ''}
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="updateItemQty('${box.id}', '${item.id}', -1)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center font-bold font-mono text-[10px]">-</button>
+                                    <span class="font-bold text-cyber-secondary font-mono text-xs">${item.count}</span>
+                                    <button onclick="updateItemQty('${box.id}', '${item.id}', 1)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center font-bold font-mono text-[10px]">+</button>
+                                </div>
+                                <div class="flex space-x-1.5 ml-2">
+                                    <button onclick="openMoveItemModal('${box.id}', '${item.id}')" class="text-cyber-accent hover:text-white p-1" title="Move Item to another Box">
+                                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                                    </button>
+                                    <button onclick="enableItemInlineEdit('${item.id}')" class="text-cyber-secondary hover:text-white p-1" title="Edit Item">
+                                        <i class="fa-solid fa-pencil"></i>
+                                    </button>
+                                    <button onclick="removeItemFromBox('${box.id}', '${item.id}')" class="text-red-500 hover:text-red-400 p-1" title="Delete Item">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                }
                 list.appendChild(li);
             });
         }
 
-        function updateItemQty(boxId, itemId, change) {
-            const box = db.boxes.find(b => b.id === boxId);
-            if (!box) return;
-            const item = box.items.find(i => i.id === itemId);
-            if (item) {
-                item.count = Math.max(1, item.count + change);
-                saveDatabase();
-                renderItemsModalList();
-                updateStats();
-                renderBoxesDashboard();
-            }
-        }
-
-        function removeItemFromBox(boxId, itemId) {
-            const box = db.boxes.find(b => b.id === boxId);
-            if (!box) return;
-            box.items = box.items.filter(i => i.id !== itemId);
-            saveDatabase();
-            renderItemsModalList();
-            updateStats();
-            renderBoxesDashboard();
-        }
-
         function quickPackManual() {
-            const input = document.getElementById('quick-add-item-input');
-            const label = input.value.trim();
-            if (!label) return;
+            const nameInput = document.getElementById('quick-add-item-input');
+            const qtyInput = document.getElementById('quick-add-item-qty');
+            const descInput = document.getElementById('quick-add-item-desc');
+            
+            const label = nameInput.value.trim();
+            const count = parseInt(qtyInput.value, 10) || 1;
+            const desc = descInput.value.trim();
+            
+            if (!label) {
+                alert("Please enter an item name.");
+                return;
+            }
+
             const box = db.boxes.find(b => b.id === activeModalBoxId);
             if (!box) return;
+
             const existingItem = box.items.find(i => i.label.toLowerCase() === label.toLowerCase());
             if (existingItem) {
-                existingItem.count += 1;
+                existingItem.count += count;
+                if (desc) existingItem.desc = desc;
             } else {
                 const newItemObj = {
-                    id: `item_${Date.now()}`,
+                    id: "item_" + Date.now(),
                     label: label,
-                    desc: '',
-                    count: 1
+                    desc: desc,
+                    count: count
                 };
                 box.items.push(newItemObj);
                 pushItemToCloud(box.id, newItemObj);
             }
+
             saveDatabase();
-            input.value = '';
+            
+            // Reset inputs
+            nameInput.value = '';
+            qtyInput.value = '1';
+            descInput.value = '';
+            
             renderItemsModalList();
             renderApp();
-        }
-
-        async function startCamera() {
-            const video = document.getElementById('viewfinder');
-            stopCamera();
-            const constraints = {
-                video: { facingMode: currentFacingMode, width: { ideal: 640 }, height: { ideal: 480 } },
-                audio: false
-            };
-            try {
-                activeCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = activeCameraStream;
-            } catch(e) {
-                console.error("Camera access failed", e);
-            }
-        }
-
-        function stopCamera() {
-            if (activeCameraStream) {
-                activeCameraStream.getTracks().forEach(track => track.stop());
-                activeCameraStream = null;
-            }
-            const video = document.getElementById('viewfinder');
-            if (video) video.srcObject = null;
-        }
-
-        function switchCamera() {
-            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
-            startCamera();
-        }
-
-        async function captureAndDetect() {
-            const video = document.getElementById('viewfinder');
-            const canvas = document.getElementById('snapshot-canvas');
-            const context = canvas.getContext('2d');
-            const overlay = document.getElementById('camera-overlay');
-            if (!video.srcObject) {
-                simulateAIDetection();
-                return;
-            }
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            overlay.innerHTML = '<div class="absolute inset-0 flex items-center justify-center bg-black/40"><i class="fa-solid fa-circle-notch text-4xl text-cyber-primary animate-spin"></i></div>';
-            setTimeout(async () => {
-                if (cocoModel && isAiLoaded) {
-                    try {
-                        const predictions = await cocoModel.detect(canvas);
-                        overlay.innerHTML = '';
-                        processPredictions(predictions);
-                    } catch(err) {
-                        console.error("Inference issue", err);
-                        overlay.innerHTML = '';
-                        simulateAIDetection();
-                    }
-                } else {
-                    overlay.innerHTML = '';
-                    simulateAIDetection();
-                }
-            }, 100);
-        }
-
-        function processPredictions(predictions) {
-            const dashboard = document.getElementById('detection-dashboard');
-            const labelInput = document.getElementById('detected-item-label');
-            const confidenceVal = document.getElementById('detected-item-confidence');
-            dashboard.classList.remove('hidden');
-            if (predictions && predictions.length > 0) {
-                const bestMatch = predictions[0];
-                labelInput.value = capitalizeFirstLetter(bestMatch.class);
-                confidenceVal.innerText = `${Math.round(bestMatch.score * 100)}%`;
-                drawBoundingBoxes(predictions);
-            } else {
-                labelInput.value = '';
-                confidenceVal.innerText = '0%';
-                labelInput.placeholder = 'Manual entry requested...';
-            }
-            document.getElementById('detected-item-desc').focus();
-        }
-
-        function drawBoundingBoxes(predictions) {
-            const overlay = document.getElementById('camera-overlay');
-            overlay.innerHTML = '';
-            predictions.forEach(p => {
-                const box = document.createElement('div');
-                box.className = 'absolute border-2 border-cyber-secondary pointer-events-none rounded';
-                const left = p.bbox[0];
-                const top = p.bbox[1];
-                const width = p.bbox[2];
-                const height = p.bbox[3];
-                box.style.left = `calc(${left}px * (100% / 640))`;
-                box.style.top = `calc(${top}px * (100% / 480))`;
-                box.style.width = `calc(${width}px * (100% / 640))`;
-                box.style.height = `calc(${height}px * (100% / 480))`;
-                overlay.appendChild(box);
-            });
-        }
-
-        function simulateAIDetection() {
-            const fallbacks = [
-                { class: 'Coffee Mug', confidence: '94%' },
-                { class: 'Running Shoe', confidence: '88%' },
-                { class: 'Novel Book', confidence: '92%' },
-                { class: 'Glass Water Bottle', confidence: '97%' },
-                { class: 'Desk Lamp', confidence: '81%' }
-            ];
-            const item = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-            const dashboard = document.getElementById('detection-dashboard');
-            dashboard.classList.remove('hidden');
-            document.getElementById('detected-item-label').value = item.class;
-            document.getElementById('detected-item-confidence').innerText = item.confidence;
-            document.getElementById('detected-item-desc').focus();
-        }
-
-        function packDetectedItem() {
-            const labelInput = document.getElementById('detected-item-label');
-            const descInput = document.getElementById('detected-item-desc');
-            const label = labelInput.value.trim();
-            const desc = descInput.value.trim();
-            const destBoxSelect = document.getElementById('pack-box-select');
-            const destBoxId = destBoxSelect.value;
-            if (!label) {
-                alert("What is the item?");
-                return;
-            }
-            if (!destBoxId) {
-                alert("Which box?");
-                return;
-            }
-            const box = db.boxes.find(b => b.id === destBoxId);
-            if (box) {
-                const existingItem = box.items.find(i => i.label.toLowerCase() === label.toLowerCase());
-                let finalItem = null;
-                if (existingItem) {
-                    existingItem.count += 1;
-                    if (desc) existingItem.desc = desc;
-                    finalItem = existingItem;
-                } else {
-                    finalItem = { id: `item_${Date.now()}`, label: label, desc: desc, count: 1 };
-                    box.items.push(finalItem);
-                }
-                saveDatabase();
-                pushItemToCloud(box.id, finalItem);
-                labelInput.value = '';
-                descInput.value = '';
-                document.getElementById('camera-overlay').innerHTML = '';
-                document.getElementById('detection-dashboard').classList.add('hidden');
-                showToast(`Packed "${label}" into ${box.id}!`);
-                renderApp();
-            }
-        }
-
-        function discardDetection() {
-            document.getElementById('detected-item-label').value = '';
-            document.getElementById('detected-item-desc').value = '';
-            document.getElementById('camera-overlay').innerHTML = '';
-            document.getElementById('detection-dashboard').classList.add('hidden');
-        }
-
-        function startScanner() {
-            if (scannerInst) stopScanner();
-            scannerInst = new Html5Qrcode("scanner-reader");
-            
-            // Dynamic qrbox function to prevent viewfinder scaling mismatch and crop errors on phones
-            const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
-                let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                let qrboxSize = Math.floor(minEdge * 0.7); // Use 70% of the smallest camera viewfinder edge
-                return {
-                    width: qrboxSize,
-                    height: qrboxSize
-                };
-            };
-            
-            const config = { 
-                fps: 15, // Higher frame rate for smoother detection
-                qrbox: qrboxFunction,
-                aspectRatio: 1.0 // Ensure square ratio for camera focusing
-            };
-            
-            scannerInst.start({ facingMode: "environment" }, config, onQrScanSuccess, onQrScanFailure)
-                .catch(err => console.error("Scanner error", err));
-        }
-
-        function stopScanner() {
-            if (scannerInst) {
-                scannerInst.stop().then(() => { scannerInst = null; }).catch(err => console.error("Scanner halt failure", err));
-            }
-        }
-
-        // SCAN SUCCESS HANDLER: Natively supports both BOX CODES and SYSTEM CONFIG DECODING!
-        function onQrScanSuccess(decodedText) {
-            console.log(`Scan matched text: ${decodedText}`);
-            
-            // Check if scanned QR is a CONFIG Setup QR code!
-            if (decodedText.startsWith('{') && decodedText.includes('"type":"moveconfig"')) {
-                try {
-                    const parsedConfig = JSON.parse(decodedText);
-                    if (parsedConfig.url && parsedConfig.token) {
-                        apiServerUrl = parsedConfig.url;
-                        apiServerToken = parsedConfig.token;
-                        
-                        localStorage.setItem('p_and_t_api_url_v4', parsedConfig.url);
-                        localStorage.setItem('p_and_t_api_token_v4', parsedConfig.token);
-                        
-                        document.getElementById('settings-api-url').value = parsedConfig.url;
-                        document.getElementById('settings-api-token').value = parsedConfig.token;
-                        
-                        updateCloudStatusLabels();
-                        logSyncEvent("CONFIGURATION SCANNED! Successfully paired with Google Sheet API via Config QR code!");
-                        showToast("Setup Synced Instantly!");
-                        
-                        syncDataFromSheet();
-                        stopScanner();
-                        switchTab('dashboard');
-                        return;
-                    }
-                } catch(e) {
-                    console.error("Config QR parsing failure", e);
-                }
-            }
-
-            let boxId = decodedText;
-            if (decodedText.startsWith('moveapp:')) boxId = decodedText.split(':')[1];
-            showScannedBox(boxId);
-        }
-
-        function onQrScanFailure() {}
-
-        function showScannedBox(boxId) {
-            const box = db.boxes.find(b => b.id.toUpperCase() === boxId.toUpperCase());
-            const resultPanel = document.getElementById('scanned-box-result');
-            if (!box) {
-                alert(`Box "${boxId}" not found in local index.`);
-                return;
-            }
-            document.getElementById('scanned-box-title').innerText = box.name;
-            document.getElementById('scanned-box-id').innerText = box.room;
-            document.getElementById('scanned-box-badge').innerText = box.id;
-            const list = document.getElementById('scanned-box-items-list');
-            list.innerHTML = '';
-            if ((box.items || []).length === 0) {
-                list.innerHTML = '<li class="text-xs text-cyber-muted font-mono text-center py-2">Empty Box.</li>';
-            } else {
-                (box.items || []).forEach(item => {
-                    const li = document.createElement('li');
-                    li.className = 'py-2 flex justify-between items-center text-xs border-b border-cyber-muted/10';
-                    li.innerHTML = `<div><span class="font-bold text-white uppercase">${item.label}</span>${item.desc ? `<p class="text-[10px] text-cyber-muted font-mono">${item.desc}</p>` : ''}</div><span class="font-bold text-cyber-secondary font-mono">${item.count} qty</span>`;
-                    list.appendChild(li);
-                });
-            }
-            resultPanel.classList.remove('hidden');
-            stopScanner();
-        }
-
-        function closeScannedResult() {
-            document.getElementById('scanned-box-result').classList.add('hidden');
-            startScanner();
-        }
-
-        function quickPackForScanned() {
-            const boxId = document.getElementById('scanned-box-badge').innerText;
-            if (boxId) {
-                selectedBoxIdForPack = boxId;
-                document.getElementById('scanned-box-result').classList.add('hidden');
-                switchTab('pack');
-            }
-        }
-
-        function printBoxLabelFromScanner() {
-            const boxId = document.getElementById('scanned-box-badge').innerText;
-            if (boxId) {
-                db.boxes.forEach(b => b.printQueue = false);
-                const box = db.boxes.find(b => b.id === boxId);
-                if (box) box.printQueue = true;
-                saveDatabase();
-                switchTab('print');
-                window.print();
-            }
-        }
-
-        function renderPrintQueueGrid() {
-            const grid = document.getElementById('print-queue-grid');
-            grid.innerHTML = '';
-            if (db.boxes.length === 0) {
-                grid.innerHTML = '<div class="col-span-3 text-xs font-mono text-center text-cyber-muted py-8 font-mono">Create boxes first.</div>';
-                return;
-            }
-            db.boxes.forEach(box => {
-                const itemsList = box.items || [];
-                const totalItemQty = itemsList.reduce((sum, item) => sum + item.count, 0);
-                const wrapper = document.createElement('div');
-                wrapper.className = 'bg-cyber-panel border border-cyber-accent/20 rounded-lg p-3 flex justify-between items-center hover:border-cyber-accent/50 transition';
-                wrapper.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <input type="checkbox" id="chk-print-${box.id}" ${box.printQueue ? 'checked' : ''} onchange="toggleBoxPrintQueue('${box.id}')" class="w-4 h-4 rounded text-cyber-accent focus:ring-cyber-accent bg-cyber-bg border-cyber-accent/40">
-                        <div>
-                            <span class="px-1.5 py-0.5 bg-cyber-accent/10 border border-cyber-accent/30 rounded text-cyber-accent font-mono text-[9px] font-bold tracking-widest">${box.id}</span>
-                            <h4 class="text-sm font-bold text-white uppercase truncate max-w-[160px] mt-1.5">${box.name}</h4>
-                            <span class="text-[10px] text-cyber-muted block font-mono">${(box.items || []).length} classes / ${totalItemQty} total</span>
-                        </div>
-                    </div>
-                    <div id="mini-qr-${box.id}" class="w-12 h-12 bg-white rounded p-1 flex items-center justify-center"></div>
-                `;
-                grid.appendChild(wrapper);
-                setTimeout(() => {
-                    const qr = qrcode(4, 'L');
-                    qr.addData(`moveapp:${box.id}`);
-                    qr.make();
-                    const targetEl = document.getElementById(`mini-qr-${box.id}`);
-                    if (targetEl) targetEl.innerHTML = qr.createImgTag(3, 1);
-                }, 50);
-            });
-        }
-
-        function selectAllForPrint() {
-            const anyUnchecked = db.boxes.some(b => !b.printQueue);
-            db.boxes.forEach(b => b.printQueue = anyUnchecked);
-            saveDatabase();
-            renderApp();
-        }
-
-        function renderPrintSheetLayout() {
-            const container = document.getElementById('print-sheet');
-            container.innerHTML = '';
-            const queuedBoxes = db.boxes.filter(b => b.printQueue);
-            if (queuedBoxes.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-500 py-12 font-mono uppercase text-xs">Print queue empty.</p>';
-                return;
-            }
-            queuedBoxes.forEach(box => {
-                const itemsList = box.items || [];
-                const totalItemQty = itemsList.reduce((sum, item) => sum + item.count, 0);
-                let safetySymbol = '';
-                if (box.handlingCode && typeof box.handlingCode === "string" && box.handlingCode.startsWith("-")) {
-                    const codes = box.handlingCode.replace("-", "").split("");
-                    let badgesHtml = "";
-                    
-                    codes.forEach(c => {
-                        const key = "-" + c;
-                        if (handlingMappings[key]) {
-                            const match = handlingMappings[key];
-                            badgesHtml += `<span style="font-size: 10px; border: 2px solid black; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 2px;">${match.printIcon} ${match.label}</span>`;
-                        }
-                    });
-                    
-                    if (badgesHtml) {
-                        safetySymbol = `<div style="margin-bottom: 8px; display: flex; flex-wrap: wrap; justify-content: center; width: 100%; gap: 2px;">${badgesHtml}</div>`;
-                    }
-                }
-                container.innerHTML += `
-                    <div class="print-card">
-                        <div style="font-size: 32px; font-weight: 900; letter-spacing: 2px; border: 4px solid black; padding: 5px 20px; border-radius: 8px; font-family: monospace; background-color: black; color: white; margin-bottom: 15px;">${box.id}</div>
-                        ${safetySymbol}
-                        <div style="font-size: 20px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; text-align: center;">${box.name}</div>
-                        <div style="font-size: 14px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 15px;">DESTINATION: ${box.room.toUpperCase()}</div>
-                        <div id="full-qr-${box.id}" class="print-qrcode"></div>
-                        <div style="width: 100%; border-top: 2px dashed black; margin-top: 15px; padding-top: 10px; text-align: left; font-size: 11px;">
-                            <span style="font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px;">Box Contents List (${totalItemQty} items total):</span>
-                            <div style="column-count: 2; column-gap: 15px;">
-                                ${itemsList.map(i => `• ${i.label.toUpperCase()} (x${i.count})`).join('<br>')}
-                            </div>
-                        </div>
-                    </div>
-                ;`
-                setTimeout(() => {
-                    const qr = qrcode(5, 'M');
-                    qr.addData(`moveapp:${box.id}`);
-                    qr.make();
-                    const targetDiv = document.getElementById(`full-qr-${box.id}`);
-                    if (targetDiv) {
-                        targetDiv.innerHTML = qr.createImgTag(5, 5);
-                    }
-                }, 50);
-            });
-        }
-
-
-        function showToast(message) {
-            const box = document.getElementById("toastNotificationBox");
-            if (!box) return;
-            const alertCard = document.createElement("div");
-            alertCard.className = "bg-cyber-panel border border-cyber-secondary text-white p-3 rounded shadow-neon-cyan max-w-xs text-xs font-mono flex items-center space-x-2 pointer-events-auto transition duration-300 transform translate-x-12 opacity-0";
-            alertCard.innerHTML = `<i class="fa-solid fa-circle-nodes text-cyber-secondary animate-pulse"></i> <span>${message}</span>`;
-            box.appendChild(alertCard);
-            
-            setTimeout(() => {
-                alertCard.classList.remove("translate-x-12", "opacity-0");
-            }, 50);
-
-            setTimeout(() => {
-                alertCard.classList.add("opacity-0", "translate-y-2");
-                setTimeout(() => alertCard.remove(), 500);
-            }, 3500);
-        }
-
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
+            showToast(`Packed "${label}"!`);
         }
     </script>
 </body>
