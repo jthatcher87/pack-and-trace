@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PNiX | Pack & Track</title>
+    <title>PNiX | Pack & Track v14.0</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
@@ -145,8 +145,8 @@
         <div class="space-y-8">
             <!-- Brand Logotype -->
             <div>
-                <h1 class="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.5</h1>
-                <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
+                <h1 class="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v14.0</h1>
+                <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest mt-1">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
             </div>
 
             <!-- Nav drawers -->
@@ -188,8 +188,8 @@
         <!-- Header Info (Mobile Only) -->
         <header class="no-print md:hidden flex justify-between items-center border-b border-cyber-primary/20 pb-4 mb-6">
             <div>
-                <h1 class="text-lg font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v13.0</h1>
-                <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
+                <h1 class="text-lg font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-primary via-cyber-accent to-cyber-secondary font-mono">PACK & TRACE v14.0</h1>
+                <span class="text-[8px] block text-cyber-secondary font-bold tracking-widest mt-0.5">PNiX STUDIOS — GEOMETRIC COMPOSITIONAL SERENITY</span>
             </div>
             <div class="flex items-center space-x-2 font-mono text-[9px] bg-cyber-primary/10 border border-cyber-primary/30 px-2 py-1 rounded">
                 <span id="mobile-status-indicator" class="w-1 h-1 rounded-full bg-red-500 animate-pulse"></span>
@@ -243,7 +243,7 @@
                 <!-- Javascript Renders Box Cards Here -->
                 <div class="col-span-full py-16 text-center text-cyber-muted space-y-3">
                     <i class="fa-solid fa-box-open text-4xl animate-bounce"></i>
-                    <p class="text-sm font-mono text-center uppercase">No containers generated. Tap "+ Assemble New Box" to configure.</p>
+                    <p class="text-sm font-mono text-center uppercase">No containers generated. Tap "+ Assemble Container" to configure.</p>
                 </div>
             </div>
         </section>
@@ -773,7 +773,6 @@
             "BA": { name: "Bathroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "BR": { name: "Bedroom", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
-            "CL": { name: "Closet", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "KT": { name: "Kitchen", packed: true, repaired: false, cleaned: false, finished: false, note: "Double check spice cabinet storage drawers before locking." },
             "LR": { name: "Living Room", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
             "OF": { name: "Office", packed: false, repaired: false, cleaned: false, finished: false, note: "" },
@@ -820,11 +819,13 @@
             }
             if (savedUrl) {
                 apiServerUrl = savedUrl;
-                document.getElementById('settings-api-url').value = savedUrl;
+                const urlEl = document.getElementById('settings-api-url');
+                if (urlEl) urlEl.value = savedUrl;
             }
             if (savedToken) {
                 apiServerToken = savedToken;
-                document.getElementById('settings-api-token').value = savedToken;
+                const tokenEl = document.getElementById('settings-api-token');
+                if (tokenEl) tokenEl.value = savedToken;
             }
 
             updateCloudUIBadge();
@@ -846,24 +847,30 @@
             renderRoomsDashboard();
             renderPrintQueueList();
             renderPrintSheetLayout();
+            renderConfigQrCode();
         }
 
         function renderStatsCount() {
-            document.getElementById('stat-total-boxes').innerText = db.boxes.length;
+            const statBoxes = document.getElementById('stat-total-boxes');
+            const statItems = document.getElementById('stat-total-items');
+            const statQty = document.getElementById('stat-total-qty');
+            if (!statBoxes || !statItems || !statQty) return;
+
+            statBoxes.innerText = db.boxes.length;
             
             const uniqueItems = db.boxes.reduce((acc, box) => {
                 const itemsList = box.items || [];
                 itemsList.forEach(i => {
-                    const label = i.label.toLowerCase().trim();
-                    acc[label] = (acc[label] || 0) + i.count;
+                    const label = i.label ? i.label.toLowerCase().trim() : '';
+                    if (label) acc[label] = (acc[label] || 0) + (i.count || 1);
                 });
                 return acc;
             }, {});
 
-            document.getElementById('stat-total-items').innerText = Object.keys(uniqueItems).length;
+            statItems.innerText = Object.keys(uniqueItems).length;
             
             const totalQty = Object.values(uniqueItems).reduce((sum, qty) => sum + qty, 0);
-            document.getElementById('stat-total-qty').innerText = totalQty;
+            statQty.innerText = totalQty;
         }
 
         function renderBoxesDashboard() {
@@ -875,7 +882,7 @@
                 grid.innerHTML = `
                     <div class="col-span-full py-16 text-center text-cyber-muted space-y-3">
                         <i class="fa-solid fa-box-open text-4xl animate-bounce"></i>
-                        <p class="text-sm font-mono text-center uppercase">No containers generated. Tap "+ Assemble New Box" to configure.</p>
+                        <p class="text-sm font-mono text-center uppercase">No containers generated. Tap "+ Assemble Container" to configure.</p>
                     </div>`;
                 return;
             }
@@ -1233,7 +1240,8 @@
             }
 
             db.boxes.forEach(b => {
-                const totalItemQty = b.items.reduce((sum, item) => sum + item.count, 0);
+                const itemsList = b.items || [];
+                const totalItemQty = itemsList.reduce((sum, item) => sum + item.count, 0);
                 const el = document.createElement('div');
                 el.className = 'flex items-center justify-between p-3 bg-black/40 border border-slate-900 rounded-xl';
                 el.innerHTML = `
@@ -1313,7 +1321,8 @@
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
             });
-            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            const activeView = document.getElementById(`view-${tabId}`);
+            if (activeView) activeView.classList.remove('hidden');
 
             // Apply desktop nav styling active states
             const navKeys = ['dashboard', 'rooms', 'pack', 'scan', 'print', 'settings'];
@@ -1420,6 +1429,7 @@
 
         function logSyncEvent(message) {
             const terminal = document.getElementById('terminal-logs');
+            if (!terminal) return;
             const timestamp = new Date().toLocaleTimeString();
             terminal.innerHTML += `<div>[${timestamp}] ${message}</div>`;
             terminal.scrollTop = terminal.scrollHeight;
@@ -1488,7 +1498,8 @@
                                 localBox.handlingCode = cloudBox.handlingCode;
                                 
                                 // Merge Items
-                                cloudBox.items.forEach(cloudItem => {
+                                (cloudBox.items || []).forEach(cloudItem => {
+                                    if (!localBox.items) localBox.items = [];
                                     const localItemIndex = localBox.items.findIndex(i => i.label.toLowerCase() === cloudItem.label.toLowerCase());
                                     if (localItemIndex > -1) {
                                         localBox.items[localItemIndex].count = Math.max(localBox.items[localItemIndex].count, cloudItem.count);
@@ -1512,7 +1523,7 @@
                             logSyncEvent("Uploading offline boxes to sheet... ");
                             for (const localBox of localPushesQueued) {
                                 await pushBoxToCloud(localBox);
-                                for (const item of localBox.items) {
+                                for (const item of (localBox.items || [])) {
                                     await pushItemToCloud(localBox.id, item);
                                 }
                             }
@@ -1607,6 +1618,7 @@
             };
 
             const div = document.getElementById('setup-qr-holder');
+            if (!div) return;
             if (apiServerUrl && apiServerToken) {
                 div.innerHTML = '';
                 const qr = qrcode(0, 'M');
@@ -1625,6 +1637,7 @@
 
         function initWebcamSelector() {
             const select = document.getElementById('pack-box-select');
+            if (!select) return;
             select.innerHTML = '';
             
             if (db.boxes.length === 0) {
@@ -1645,14 +1658,16 @@
             const statusText = document.getElementById('ai-engine-status-text');
 
             try {
-                // cocoSsd is registered globally via JS imports
-                objectDetectorModel = await cocoSsd.load();
-                statusBulb.className = 'w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse';
-                statusText.innerText = 'COCO-SSD AI Active';
-                statusText.className = 'text-green-500';
+                // Load MobileNet-v2 model for precision classification
+                objectDetectorModel = await cocoSsd.load({ base: "mobilenet_v2" });
+                if (statusBulb) statusBulb.className = 'w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse';
+                if (statusText) {
+                    statusText.innerText = 'MobileNet-v2 AI Active';
+                    statusText.className = 'text-green-500';
+                }
             } catch(e) {
                 console.error("Tensorflow initialization warning:", e);
-                statusText.innerText = 'AI offline manual fallback';
+                if (statusText) statusText.innerText = 'AI offline manual fallback';
             }
         }
 
@@ -1737,8 +1752,9 @@
                         ctx.fillText(labelText, p.bbox[0] + 8, p.bbox[1] - 6);
 
                         // Auto populate item description with highest confidence score detection
-                        if (p.score > 0.65) {
-                            document.getElementById('pack-item-input').value = capitalizeFirstLetter(p.class);
+                        if (p.score > 0.50) {
+                            const inputEl = document.getElementById('pack-item-input');
+                            if (inputEl) inputEl.value = capitalizeFirstLetter(p.class);
                         }
                     });
                 }
@@ -1802,8 +1818,10 @@
                         localStorage.setItem('pnix_packtrack_api_url_v4', parsed.url);
                         localStorage.setItem('pnix_packtrack_api_token_v4', parsed.token);
                         
-                        document.getElementById('settings-url').value = parsed.url;
-                        document.getElementById('settings-token').value = parsed.token;
+                        const urlEl = document.getElementById('settings-api-url');
+                        const tokenEl = document.getElementById('settings-api-token');
+                        if (urlEl) urlEl.value = parsed.url;
+                        if (tokenEl) tokenEl.value = parsed.token;
 
                         updateCloudUIBadge();
                         stopScanner();
@@ -1840,8 +1858,9 @@
                 const list = document.getElementById('scan-res-items-list');
                 list.innerHTML = '';
                 
-                if (box.items && box.items.length > 0) {
-                    box.items.forEach(item => {
+                const itemsList = box.items || [];
+                if (itemsList.length > 0) {
+                    itemsList.forEach(item => {
                         const li = document.createElement('li');
                         li.className = 'py-1 flex justify-between border-b border-cyber-accent/10 font-bold';
                         li.innerHTML = `<span>• ${item.label.toUpperCase()}</span> <span>x${item.count}</span>`;
@@ -2106,6 +2125,45 @@
             document.getElementById('edit-box-modal').classList.add('hidden');
         }
 
+        function createNewBox() {
+            const roomCode = document.getElementById('modal-box-room-select').value;
+            
+            // Compile multi-select handling care suffix (e.g. -FUH)
+            let handlingCode = "";
+            if (selectedAddPills.length > 0) {
+                const sortedPills = ["C", "F", "H", "I", "L", "P", "S", "U"].filter(p => selectedAddPills.indexOf(p) > -1);
+                handlingCode = "-" + sortedPills.join("");
+            }
+
+            const existingCount = db.boxes.filter(b => b.roomCode === roomCode).length;
+            const serial = String(existingCount + 1).padStart(3, '0');
+            const boxId = `${roomCode}${serial}${handlingCode}`;
+            const name = document.getElementById('modal-box-name').value.trim();
+            const desc = document.getElementById('modal-box-desc').value.trim();
+            
+            if (!name) {
+                alert("Box descriptive name is required!");
+                return;
+            }
+            
+            const newBox = {
+                id: boxId,
+                name: name,
+                roomCode: roomCode,
+                room: roomMappings[roomCode] || 'Storage',
+                desc: desc,
+                handlingCode: handlingCode,
+                items: [],
+                printQueue: true
+            };
+            db.boxes.push(newBox);
+            saveDatabase();
+            closeAddBoxModal();
+            renderApp();
+            pushBoxToCloud(newBox);
+            showToast(`Box ${boxId} Created Successfully!`);
+        }
+
         function saveBoxDetails() {
             const id = document.getElementById('edit-box-id-hidden').value;
             const roomCode = document.getElementById('edit-box-room-select').value;
@@ -2217,6 +2275,7 @@
 
         function renderItemsModalList() {
             const list = document.getElementById('items-modal-list');
+            if (!list) return;
             list.innerHTML = '';
             const box = db.boxes.find(b => b.id === activeModalBoxId);
             if (!box || (box.items || []).length === 0) {
